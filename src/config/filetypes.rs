@@ -46,6 +46,12 @@ pub struct CommitTemplateConfig {
     pub actions: HashMap<String, String>,
 }
 
+#[derive(Debug, Deserialize, Serialize)]
+pub struct CommitTemplateConfigWrapper {
+    #[serde(rename = "commit_templates")]
+    pub commit_templates: CommitTemplateConfig,
+}
+
 pub struct FileTypeManager {
     file_types: FileTypeConfig,
     categories: CategoryConfig,
@@ -121,18 +127,16 @@ impl FileTypeManager {
 }
 
 fn load_file_type_config(config_dir: &Path) -> Result<FileTypeConfig, Box<dyn std::error::Error>> {
-    let config_path = config_dir.join("file-types.yaml");
+    let config_path = config_dir.join("file-types.toml");
     let content = fs::read_to_string(&config_path)?;
-    let config: FileTypeConfig = serde_yaml::from_str(&content)?;
+    let config: FileTypeConfig = toml::from_str(&content)?;
     Ok(config)
 }
 
 fn load_category_config(config_dir: &Path) -> Result<CategoryConfig, Box<dyn std::error::Error>> {
-    let config_path = config_dir.join("categories.yaml");
+    let config_path = config_dir.join("categories.toml");
     let content = fs::read_to_string(&config_path)?;
-    
-    // 尝试解析带 categories 顶层键的格式
-    let wrapper: CategoryConfigWrapper = serde_yaml::from_str(&content)?;
+    let wrapper: CategoryConfigWrapper = toml::from_str(&content)?;
     Ok(CategoryConfig {
         directory_patterns: wrapper.categories.directory_patterns,
         default: wrapper.categories.default,
@@ -140,9 +144,9 @@ fn load_category_config(config_dir: &Path) -> Result<CategoryConfig, Box<dyn std
 }
 
 fn load_commit_template_config(config_dir: &Path) -> Result<CommitTemplateConfig, Box<dyn std::error::Error>> {
-    let config_path = config_dir.join("commit-templates.yaml");
+    let config_path = config_dir.join("commit-templates.toml");
     let content = fs::read_to_string(&config_path)?;
-    let config: CommitTemplateConfig = serde_yaml::from_str(&content)?;
-    Ok(config)
+    let wrapper: CommitTemplateConfigWrapper = toml::from_str(&content)?;
+    Ok(wrapper.commit_templates)
 }
 

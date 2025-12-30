@@ -1,0 +1,47 @@
+# Commit 消息模板配置
+[commit_templates]
+# 变更类型前缀
+[commit_templates.prefixes]
+feat = "feat"
+fix = "fix"
+refactor = "refactor"
+style = "style"
+docs = "docs"
+test = "test"
+chore = "chore"
+perf = "perf"
+cleanup = "cleanup"
+breaking = "breaking"
+ci = "ci"
+build = "build"
+revert = "revert"
+
+# 中文描述映射
+[commit_templates.descriptions]
+feat = "新增功能"
+fix = "修复问题"
+refactor = "重构代码"
+style = "样式调整"
+docs = "文档更新"
+test = "测试相关"
+chore = "维护任务"
+perf = "性能优化"
+cleanup = "清理代码"
+breaking = "破坏性变更"
+ci = "持续集成"
+build = "构建相关"
+revert = "回滚变更"
+
+# 动作词映射
+[commit_templates.actions]
+added = "新增"
+modified = "优化"
+deleted = "删除"
+renamed = "重命名"
+moved = "移动"
+updated = "更新"
+improved = "改进"
+enhanced = "增强"
+fixed = "修复"
+cleaned = "清理"
+

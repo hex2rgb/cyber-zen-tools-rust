@@ -1,0 +1,58 @@
+# 文件分类配置
+# 目录路径分类规则
+[categories.directory_patterns.test]
+patterns = ["test", "tests", "spec", "_test", "testing"]
+description = "测试文件"
+
+[categories.directory_patterns.docs]
+patterns = ["doc", "docs", "documentation", "readme", "guide", "manual"]
+description = "文档文件"
+
+[categories.directory_patterns.source]
+patterns = ["src", "app", "lib", "packages", "internal", "pkg", "main", "core"]
+description = "源代码"
+
+[categories.directory_patterns.config]
+patterns = ["config", "conf", "settings", "env", "cfg"]
+description = "配置文件"
+
+[categories.directory_patterns.scripts]
+patterns = ["script", "scripts", "bin", "tools", "build", "make"]
+description = "脚本文件"
+
+[categories.directory_patterns.assets]
+patterns = ["assets", "static", "public", "resources", "images", "styles", "fonts", "media"]
+description = "资源文件"
+
+[categories.directory_patterns.database]
+patterns = ["migrations", "db", "database", "models", "entities", "schema", "data"]
+description = "数据库文件"
+
+[categories.directory_patterns.deployment]
+patterns = ["deploy", "docker", "k8s", "kubernetes", "helm", "terraform", "ansible", "ci", "cd"]
+description = "部署文件"
+
+[categories.directory_patterns.components]
+patterns = ["components", "ui", "widgets", "elements", "blocks"]
+description = "UI 组件"
+
+[categories.directory_patterns.pages]
+patterns = ["pages", "views", "screens", "routes", "templates"]
+description = "页面文件"
+
+[categories.directory_patterns.utils]
+patterns = ["utils", "helpers", "common", "shared", "functions", "services"]
+description = "工具函数"
+
+[categories.directory_patterns.api]
+patterns = ["api", "endpoints", "controllers", "handlers", "routes"]
+description = "API 接口"
+
+[categories.directory_patterns.middleware]
+patterns = ["middleware", "interceptors", "filters", "guards"]
+description = "中间件"
+
+# 默认分类
+[categories]
+default = "功能模块"
+

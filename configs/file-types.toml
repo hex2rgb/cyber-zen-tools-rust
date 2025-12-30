@@ -1,0 +1,169 @@
+# 文件类型配置 - 支持多种编程语言和框架
+[file_types.frontend.react]
+extensions = [".tsx", ".jsx"]
+description = "React 组件"
+
+[file_types.frontend.vue]
+extensions = [".vue"]
+description = "Vue 组件"
+
+[file_types.frontend.svelte]
+extensions = [".svelte"]
+description = "Svelte 组件"
+
+[file_types.frontend.typescript]
+extensions = [".ts"]
+description = "TypeScript 文件"
+
+[file_types.frontend.javascript]
+extensions = [".js"]
+description = "JavaScript 文件"
+
+[file_types.frontend.css]
+extensions = [".css"]
+description = "CSS 样式文件"
+
+[file_types.frontend.scss]
+extensions = [".scss", ".sass"]
+description = "SCSS/Sass 样式文件"
+
+[file_types.frontend.less]
+extensions = [".less"]
+description = "Less 样式文件"
+
+[file_types.frontend.stylus]
+extensions = [".styl"]
+description = "Stylus 样式文件"
+
+[file_types.frontend.html]
+extensions = [".html", ".htm"]
+description = "HTML 文件"
+
+[file_types.frontend.svg]
+extensions = [".svg"]
+description = "SVG 矢量图"
+
+[file_types.frontend.webp]
+extensions = [".webp"]
+description = "WebP 图片"
+
+[file_types.frontend.fonts]
+extensions = [".woff", ".woff2", ".eot", ".ttf", ".otf"]
+description = "字体文件"
+
+[file_types.frontend.json]
+extensions = [".json", ".jsonc", ".json5"]
+description = "JSON 数据文件"
+
+[file_types.frontend.data]
+extensions = [".csv", ".tsv", ".xml", ".rss", ".atom"]
+description = "数据文件"
+
+[file_types.backend.go]
+extensions = [".go"]
+description = "Go 代码"
+
+[file_types.backend.python]
+extensions = [".py", ".pyw", ".pyx", ".pyi"]
+description = "Python 代码"
+
+[file_types.backend.java]
+extensions = [".java", ".class", ".jar"]
+description = "Java 代码"
+
+[file_types.backend.cpp]
+extensions = [".c", ".cpp", ".cc", ".cxx", ".h", ".hpp"]
+description = "C/C++ 代码"
+
+[file_types.backend.csharp]
+extensions = [".cs", ".vb"]
+description = "C# 代码"
+
+[file_types.backend.rust]
+extensions = [".rs"]
+description = "Rust 代码"
+
+[file_types.backend.php]
+extensions = [".php", ".phtml"]
+description = "PHP 代码"
+
+[file_types.backend.ruby]
+extensions = [".rb", ".erb"]
+description = "Ruby 代码"
+
+[file_types.backend.node]
+extensions = [".node"]
+description = "Node.js 原生模块"
+
+[file_types.data.database]
+extensions = [".sql", ".db", ".sqlite", ".sqlite3", ".mdb", ".accdb"]
+description = "数据库文件"
+
+[file_types.data.json]
+extensions = [".json", ".jsonc", ".json5"]
+description = "JSON 配置文件"
+
+[file_types.data.yaml]
+extensions = [".yaml", ".yml"]
+description = "YAML 配置文件"
+
+[file_types.data.toml]
+extensions = [".toml"]
+description = "TOML 配置文件"
+
+[file_types.data.config]
+extensions = [".ini", ".cfg", ".conf", ".config", ".properties", ".env", ".env.local", ".env.production", ".env.development"]
+description = "其他配置文件"
+
+[file_types.docs.markdown]
+extensions = [".md", ".txt", ".rst", ".adoc"]
+description = "文档文件"
+
+[file_types.docs.scripts]
+extensions = [".sh", ".bash", ".zsh", ".fish", ".bat", ".cmd", ".ps1"]
+description = "脚本文件"
+
+[file_types.build.dependencies]
+extensions = [".lock", ".sum", ".mod", ".gradle", ".pom", ".json", ".yaml", ".yml"]
+description = "依赖管理文件"
+
+[file_types.build.deployment]
+extensions = [".dockerfile", ".dockerignore", ".json", ".yaml", ".yml", ".toml"]
+description = "部署配置文件"
+
+[file_types.build.build]
+extensions = [".json", ".yaml", ".yml", ".toml", ".ini", ".cfg", ".conf"]
+description = "构建配置文件"
+
+[file_types.other.git]
+extensions = [".gitignore", ".gitattributes"]
+description = "Git 配置文件"
+
+[file_types.other.env]
+extensions = [".env", ".env.local", ".env.production"]
+description = "环境配置文件"
+
+[file_types.other.logs]
+extensions = [".log"]
+description = "日志文件"
+
+[file_types.other.archives]
+extensions = [".zip", ".tar", ".gz", ".rar", ".7z"]
+description = "压缩文件"
+
+[file_types.other.executables]
+extensions = [".exe", ".dll", ".so", ".dylib"]
+description = "可执行文件"
+
+[file_types.other.images]
+extensions = [".jpg", ".jpeg", ".png", ".gif", ".bmp"]
+description = "图片文件"
+
+[file_types.other.media]
+extensions = [".mp4", ".avi", ".mov", ".wmv", ".flv", ".mp3", ".wav", ".flac", ".aac"]
+description = "媒体文件"
+
+[file_types.other.documents]
+extensions = [".pdf", ".doc", ".docx", ".xls", ".xlsx", ".ppt", ".pptx"]
+description = "Office 文档"
+
