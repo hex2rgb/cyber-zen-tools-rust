@@ -38,7 +38,7 @@ check_configs() {
     
     local missing_files=()
     
-    for config_file in "file-types.yaml" "categories.yaml" "commit-templates.yaml"; do
+    for config_file in "file-types.toml" "categories.toml" "commit-templates.toml"; do
         if [ ! -f "$CONFIGS_DIR/$config_file" ]; then
             missing_files+=("$config_file")
         fi
@@ -61,7 +61,7 @@ install_to_user() {
     
     mkdir -p "$USER_CONFIG_DIR"
     
-    for config_file in "file-types.yaml" "categories.yaml" "commit-templates.yaml"; do
+    for config_file in "file-types.toml" "categories.toml" "commit-templates.toml"; do
         if cp "$CONFIGS_DIR/$config_file" "$USER_CONFIG_DIR/"; then
             echo -e "  ${GREEN}✓${NC} $config_file"
         else
@@ -80,12 +80,7 @@ show_install_info() {
     echo "  项目配置: $CONFIGS_DIR"
     echo "  用户配置: $USER_CONFIG_DIR"
     echo ""
-    echo -e "${YELLOW}配置文件优先级:${NC}"
-    echo "  1. 项目目录 (./configs/)"
-    echo "  2. 可执行文件目录 (<exe_dir>/configs/)"
-    echo "  3. 用户目录 (~/.cyber-zen/configs/)"
-    echo ""
-    echo -e "${GREEN}安装完成！程序会自动按优先级查找配置文件。${NC}"
+    echo -e "${GREEN}安装完成！配置文件位置: ~/.cyber-zen/configs/${NC}"
 }
 
 # 主函数

@@ -286,7 +286,7 @@ install_configs() {
     
     # 配置文件下载地址
     local base_url="https://raw.githubusercontent.com/hex2rgb/cyber-zen-tools/main/configs"
-    local config_files=("file-types.yaml" "categories.yaml" "commit-templates.yaml")
+    local config_files=("file-types.toml" "categories.toml" "commit-templates.toml")
     
     local success_count=0
     for config_file in "${config_files[@]}"; do
@@ -304,10 +304,7 @@ install_configs() {
     
     if [ $success_count -eq ${#config_files[@]} ]; then
         print_success "✓ 所有配置文件安装完成: $user_config_dir"
-        print_info "配置文件优先级:"
-        print_info "  1. 项目目录 (./configs/)"
-        print_info "  2. 可执行文件目录 (<exe_dir>/configs/)"
-        print_info "  3. 用户目录 ($user_config_dir)"
+        print_info "配置文件位置: $user_config_dir"
     else
         print_warning "⚠ 部分配置文件安装失败，但程序仍可正常使用"
         print_info "已安装: $success_count/${#config_files[@]} 个配置文件"
