@@ -5,9 +5,16 @@ on:
     tags: [ 'v*' ]
 
 jobs:
-  release:
-    name: Create Release
-    runs-on: ubuntu-latest
+  build:
+    name: Build ${{ matrix.os_name }}-${{ matrix.arch }}
+    strategy:
+      matrix:
+        include:
+          - os: macos-latest
+            target: aarch64-apple-darwin
+            os_name: darwin
+            arch: arm64
+    runs-on: ${{ matrix.os }}
     permissions:
       contents: write
       packages: write
@@ -19,7 +26,7 @@ jobs:
     - name: Set up Rust
       uses: dtolnay/rust-toolchain@stable
       with:
-        targets: x86_64-apple-darwin,x86_64-unknown-linux-gnu,aarch64-apple-darwin,aarch64-unknown-linux-gnu
+        targets: ${{ matrix.target }}
 
     - name: Cache Rust dependencies
       uses: actions/cache@v4
@@ -34,39 +41,41 @@ jobs:
         restore-keys: |
           ${{ runner.os }}-rust-
 
+    - name: Build
+      run: |
+        cargo build --release --target ${{ matrix.target }}
+        mkdir -p dist
+        cp target/${{ matrix.target }}/release/cyber-zen-tools "dist/cyber-zen-${{ matrix.os_name }}-${{ matrix.arch }}"
+        chmod +x "dist/cyber-zen-${{ matrix.os_name }}-${{ matrix.arch }}"
+
+    - name: Upload artifact
+      uses: actions/upload-artifact@v4
+      with:
+        name: cyber-zen-${{ matrix.os_name }}-${{ matrix.arch }}
+        path: dist/cyber-zen-${{ matrix.os_name }}-${{ matrix.arch }}
+
+  release:
+    name: Create Release
+    needs: build
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      packages: write
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
     - name: Get version info
       id: version
       run: |
         VERSION=${GITHUB_REF#refs/tags/}
         echo "version=$VERSION" >> $GITHUB_OUTPUT
 
-
-    - name: Build for multiple platforms
-      run: |
-        mkdir -p dist
-        
-        # Build for different platforms
-        for target in x86_64-apple-darwin x86_64-unknown-linux-gnu aarch64-apple-darwin aarch64-unknown-linux-gnu; do
-          echo "Building for $target..."
-          cargo build --release --target $target
-          
-          # Determine OS and arch from target
-          if [[ $target == *"darwin"* ]]; then
-            os="darwin"
-          elif [[ $target == *"linux"* ]]; then
-            os="linux"
-          fi
-          
-          if [[ $target == *"x86_64"* ]]; then
-            arch="amd64"
-          elif [[ $target == *"aarch64"* ]]; then
-            arch="arm64"
-          fi
-          
-          # Copy binary to dist with correct naming
-          cp target/$target/release/cyber-zen-tools "dist/cyber-zen-$os-$arch"
-          chmod +x "dist/cyber-zen-$os-$arch"
-        done
+    - name: Download all artifacts
+      uses: actions/download-artifact@v4
+      with:
+        path: dist
 
     - name: Create release assets
       run: |
@@ -86,10 +95,7 @@ jobs:
           ## Cyber Zen Tools ${{ steps.version.outputs.version }}
           
           ### 下载
-          - [cyber-zen-darwin-amd64.tar.gz](https://github.com/${{ github.repository }}/releases/download/${{ steps.version.outputs.version }}/cyber-zen-darwin-amd64.tar.gz) - macOS Intel
           - [cyber-zen-darwin-arm64.tar.gz](https://github.com/${{ github.repository }}/releases/download/${{ steps.version.outputs.version }}/cyber-zen-darwin-arm64.tar.gz) - macOS Apple Silicon
-          - [cyber-zen-linux-amd64.tar.gz](https://github.com/${{ github.repository }}/releases/download/${{ steps.version.outputs.version }}/cyber-zen-linux-amd64.tar.gz) - Linux AMD64
-          - [cyber-zen-linux-arm64.tar.gz](https://github.com/${{ github.repository }}/releases/download/${{ steps.version.outputs.version }}/cyber-zen-linux-arm64.tar.gz) - Linux ARM64
           
           ### 安装
           ```bash
@@ -100,4 +106,3 @@ jobs:
           dist/*.tar.gz
         draft: false
         prerelease: false
-
