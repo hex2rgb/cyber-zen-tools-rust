@@ -37,11 +37,31 @@ print_error() {
 
 # 检测系统架构
 detect_arch() {
-    case "$(uname -m)" in
-        x86_64) echo "x86_64" ;;
-        arm64|aarch64) echo "aarch64" ;;
-        *) echo "x86_64" ;;
-    esac
+    # 在 macOS 上，优先检测实际硬件架构（避免 Rosetta 2 干扰）
+    if [ "$(uname -s)" = "Darwin" ]; then
+        # 使用 arch 命令检测实际架构（在 Rosetta 2 下会返回实际架构）
+        local actual_arch=$(arch)
+        case "$actual_arch" in
+            arm64) echo "aarch64" ;;
+            i386) 
+                # 如果是 i386，可能是 Rosetta 2，检查是否支持 ARM64
+                if sysctl -n hw.optional.arm64 2>/dev/null | grep -q "1"; then
+                    echo "aarch64"
+                else
+                    echo "x86_64"
+                fi
+                ;;
+            x86_64) echo "x86_64" ;;
+            *) echo "x86_64" ;;
+        esac
+    else
+        # 非 macOS 系统，使用 uname -m
+        case "$(uname -m)" in
+            x86_64) echo "x86_64" ;;
+            arm64|aarch64) echo "aarch64" ;;
+            *) echo "x86_64" ;;
+        esac
+    fi
 }
 
 # 检测操作系统
