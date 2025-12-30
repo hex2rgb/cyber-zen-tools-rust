@@ -15,7 +15,7 @@ NC='\033[0m'
 # 变量定义
 BINARY_NAME="cyber-zen"
 INSTALL_DIR="/usr/local/bin"
-REPO_URL="hex2rgb/cyber-zen-tools"
+REPO_URL="hex2rgb/cyber-zen-tools-rust"
 VERSION=""
 
 # 打印带颜色的消息
@@ -50,6 +50,24 @@ detect_os() {
         Darwin*) echo "apple-darwin" ;;
         Linux*) echo "unknown-linux-gnu" ;;
         *) echo "unknown-linux-gnu" ;;
+    esac
+}
+
+# 将架构映射到 release.yml 使用的格式
+map_arch_for_release() {
+    case "$1" in
+        x86_64) echo "amd64" ;;
+        aarch64) echo "arm64" ;;
+        *) echo "amd64" ;;
+    esac
+}
+
+# 将操作系统映射到 release.yml 使用的格式
+map_os_for_release() {
+    case "$1" in
+        apple-darwin) echo "darwin" ;;
+        unknown-linux-gnu) echo "linux" ;;
+        *) echo "linux" ;;
     esac
 }
 
@@ -101,9 +119,12 @@ download_and_install() {
     print_info "检测到系统: $arch-$os"
     print_info "下载版本: $version"
     
-    # 构建下载 URL（Rust 目标三元组格式）
-    local target="${arch}-${os}"
-    local download_url="https://github.com/${REPO_URL}/releases/download/${version}/cyber-zen-tools-${target}.tar.gz"
+    # 映射到 release.yml 使用的格式
+    local os_name=$(map_os_for_release "$os")
+    local arch_name=$(map_arch_for_release "$arch")
+    
+    # 构建下载 URL（匹配 release.yml 的文件命名格式）
+    local download_url="https://github.com/${REPO_URL}/releases/download/${version}/cyber-zen-${os_name}-${arch_name}.tar.gz"
     
     print_info "下载地址: $download_url"
     
@@ -129,24 +150,48 @@ download_and_install() {
         exit 1
     fi
     
-    # 查找二进制文件（可能在解压后的目录中）
+    # 查找二进制文件（匹配 release.yml 的文件命名格式）
     local binary_file=""
-    if [ -f "cyber-zen-tools" ]; then
-        binary_file="cyber-zen-tools"
-    elif [ -f "cyber-zen-tools-${target}" ]; then
-        binary_file="cyber-zen-tools-${target}"
-    else
-        # 查找第一个可执行文件
-        binary_file=$(find . -type f -executable -name "cyber-zen-tools*" | head -1)
-        if [ -z "$binary_file" ]; then
-            print_error "解压后未找到二进制文件"
-            print_info "当前目录文件列表:"
-            ls -la
-            cd - > /dev/null
-            rm -rf "$temp_dir"
-            exit 1
+    local expected_name="cyber-zen-${os_name}-${arch_name}"
+    
+    # 检查解压后是否创建了目录
+    if [ -d "$expected_name" ]; then
+        # 在目录中查找二进制文件
+        if [ -f "$expected_name/$expected_name" ]; then
+            binary_file="$expected_name/$expected_name"
+        elif [ -f "$expected_name/cyber-zen-tools" ]; then
+            binary_file="$expected_name/cyber-zen-tools"
+        else
+            # 在目录中查找第一个可执行文件（macOS 兼容的方式）
+            for file in "$expected_name"/cyber-zen*; do
+                if [ -f "$file" ] && [ -x "$file" ]; then
+                    binary_file="$file"
+                    break
+                fi
+            done
         fi
-        binary_file=$(basename "$binary_file")
+    elif [ -f "$expected_name" ]; then
+        # 文件直接在当前目录
+        binary_file="$expected_name"
+    elif [ -f "cyber-zen-tools" ]; then
+        binary_file="cyber-zen-tools"
+    else
+        # 在当前目录查找第一个可执行文件（macOS 兼容的方式）
+        for file in ./cyber-zen*; do
+            if [ -f "$file" ] && [ -x "$file" ]; then
+                binary_file="$file"
+                break
+            fi
+        done
+    fi
+    
+    if [ -z "$binary_file" ] || [ ! -f "$binary_file" ]; then
+        print_error "解压后未找到二进制文件"
+        print_info "当前目录文件列表:"
+        ls -la
+        cd - > /dev/null
+        rm -rf "$temp_dir"
+        exit 1
     fi
     
     print_info "找到二进制文件: $binary_file"
