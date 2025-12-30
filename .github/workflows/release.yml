@@ -1,0 +1,103 @@
+name: Release
+
+on:
+  push:
+    tags: [ 'v*' ]
+
+jobs:
+  release:
+    name: Create Release
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      packages: write
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Set up Rust
+      uses: dtolnay/rust-toolchain@stable
+      with:
+        targets: x86_64-apple-darwin,x86_64-unknown-linux-gnu,aarch64-apple-darwin,aarch64-unknown-linux-gnu
+
+    - name: Cache Rust dependencies
+      uses: actions/cache@v4
+      with:
+        path: |
+          ~/.cargo/bin/
+          ~/.cargo/registry/index/
+          ~/.cargo/registry/cache/
+          ~/.cargo/git/db/
+          target/
+        key: ${{ runner.os }}-rust-${{ hashFiles('**/Cargo.lock') }}
+        restore-keys: |
+          ${{ runner.os }}-rust-
+
+    - name: Get version info
+      id: version
+      run: |
+        VERSION=${GITHUB_REF#refs/tags/}
+        echo "version=$VERSION" >> $GITHUB_OUTPUT
+
+
+    - name: Build for multiple platforms
+      run: |
+        mkdir -p dist
+        
+        # Build for different platforms
+        for target in x86_64-apple-darwin x86_64-unknown-linux-gnu aarch64-apple-darwin aarch64-unknown-linux-gnu; do
+          echo "Building for $target..."
+          cargo build --release --target $target
+          
+          # Determine OS and arch from target
+          if [[ $target == *"darwin"* ]]; then
+            os="darwin"
+          elif [[ $target == *"linux"* ]]; then
+            os="linux"
+          fi
+          
+          if [[ $target == *"x86_64"* ]]; then
+            arch="amd64"
+          elif [[ $target == *"aarch64"* ]]; then
+            arch="arm64"
+          fi
+          
+          # Copy binary to dist with correct naming
+          cp target/$target/release/cyber-zen-tools "dist/cyber-zen-$os-$arch"
+          chmod +x "dist/cyber-zen-$os-$arch"
+        done
+
+    - name: Create release assets
+      run: |
+        cd dist
+        for file in *; do
+          tar -czf "${file}.tar.gz" "$file"
+          zip "${file}.zip" "$file"
+        done
+        cd ..
+
+    - name: Create Release
+      uses: softprops/action-gh-release@v1
+      with:
+        tag_name: ${{ github.ref_name }}
+        name: Release ${{ github.ref_name }}
+        body: |
+          ## Cyber Zen Tools ${{ steps.version.outputs.version }}
+          
+          ### 下载
+          - [cyber-zen-darwin-amd64.tar.gz](https://github.com/${{ github.repository }}/releases/download/${{ steps.version.outputs.version }}/cyber-zen-darwin-amd64.tar.gz) - macOS Intel
+          - [cyber-zen-darwin-arm64.tar.gz](https://github.com/${{ github.repository }}/releases/download/${{ steps.version.outputs.version }}/cyber-zen-darwin-arm64.tar.gz) - macOS Apple Silicon
+          - [cyber-zen-linux-amd64.tar.gz](https://github.com/${{ github.repository }}/releases/download/${{ steps.version.outputs.version }}/cyber-zen-linux-amd64.tar.gz) - Linux AMD64
+          - [cyber-zen-linux-arm64.tar.gz](https://github.com/${{ github.repository }}/releases/download/${{ steps.version.outputs.version }}/cyber-zen-linux-arm64.tar.gz) - Linux ARM64
+          
+          ### 安装
+          ```bash
+          # 下载并安装
+          curl -fsSL https://raw.githubusercontent.com/${{ github.repository }}/main/scripts/install.sh | bash -s -- --version ${{ steps.version.outputs.version }}
+          ```
+        files: |
+          dist/*.tar.gz
+        draft: false
+        prerelease: false
+

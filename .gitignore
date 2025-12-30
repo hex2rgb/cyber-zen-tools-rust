@@ -1,0 +1,60 @@
+# 二进制文件
+build/
+dist/
+*.exe
+*.dll
+*.so
+*.dylib
+
+# 测试覆盖率文件
+coverage.out
+coverage.html
+
+# Rust 构建目录
+target/
+
+# IDE 文件
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# 操作系统文件
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# 日志文件
+*.log
+logs/
+
+# 临时文件
+tmp/
+temp/
+*.tmp
+
+# 配置文件（包含敏感信息）
+config.yaml
+config.yml
+.env
+.env.local
+.env.*.local
+
+# 安装目录
+.cyben-zen-tools/
+cyben-zen-tools/
+
+# 发布包
+release/
+
+# 文档生成
+docs/
+
+# 本地测试文件
+testdata/
+

@@ -1,0 +1,23 @@
+[package]
+name = "cyber-zen-tools"
+version = "1.0.0"
+edition = "2021"
+authors = ["Your Name <your.email@example.com>"]
+description = "跨平台命令行工具集，专注于开发工作流优化"
+license = "Apache-2.0"
+
+[dependencies]
+clap = { version = "4.5", features = ["derive"] }
+serde = { version = "1.0", features = ["derive"] }
+serde_yaml = "0.9"
+colored = "2.1"
+tokio = { version = "1.35", features = ["full"] }
+image = "0.24"
+regex = "1.10"
+chrono = "0.4"
+
+[profile.release]
+opt-level = 3
+lto = true
+codegen-units = 1
+
