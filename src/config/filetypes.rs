@@ -22,8 +22,19 @@ pub struct CategoryPattern {
 }
 
 #[derive(Debug, Deserialize, Serialize)]
-pub struct CategoryConfig {
+pub struct CategoryConfigInner {
     #[serde(rename = "directory_patterns")]
+    pub directory_patterns: HashMap<String, CategoryPattern>,
+    pub default: String,
+}
+
+#[derive(Debug, Deserialize, Serialize)]
+pub struct CategoryConfigWrapper {
+    pub categories: CategoryConfigInner,
+}
+
+#[derive(Debug, Deserialize, Serialize)]
+pub struct CategoryConfig {
     pub directory_patterns: HashMap<String, CategoryPattern>,
     pub default: String,
 }
@@ -119,8 +130,13 @@ fn load_file_type_config(config_dir: &Path) -> Result<FileTypeConfig, Box<dyn st
 fn load_category_config(config_dir: &Path) -> Result<CategoryConfig, Box<dyn std::error::Error>> {
     let config_path = config_dir.join("categories.yaml");
     let content = fs::read_to_string(&config_path)?;
-    let config: CategoryConfig = serde_yaml::from_str(&content)?;
-    Ok(config)
+    
+    // 尝试解析带 categories 顶层键的格式
+    let wrapper: CategoryConfigWrapper = serde_yaml::from_str(&content)?;
+    Ok(CategoryConfig {
+        directory_patterns: wrapper.categories.directory_patterns,
+        default: wrapper.categories.default,
+    })
 }
 
 fn load_commit_template_config(config_dir: &Path) -> Result<CommitTemplateConfig, Box<dyn std::error::Error>> {
