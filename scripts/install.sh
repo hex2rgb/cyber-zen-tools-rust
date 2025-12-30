@@ -253,9 +253,26 @@ download_and_install() {
         chmod +x "$INSTALL_DIR/$BINARY_NAME"
     fi
     
+    # 在清理临时文件前，尝试从解压包中复制配置文件
+    local configs_found=false
+    if [ -d "$expected_name/configs" ]; then
+        print_info "在解压包中找到配置文件目录"
+        install_configs_from_dir "$expected_name/configs"
+        configs_found=true
+    elif [ -d "configs" ]; then
+        print_info "在解压包根目录找到配置文件目录"
+        install_configs_from_dir "configs"
+        configs_found=true
+    fi
+    
     # 清理临时文件
     cd - > /dev/null
     rm -rf "$temp_dir"
+    
+    # 如果解压包中没有配置文件，尝试其他方法
+    if [ "$configs_found" = false ]; then
+        install_configs
+    fi
     
     print_success "下载安装完成: $INSTALL_DIR/$BINARY_NAME"
 }
@@ -273,6 +290,37 @@ verify_installation() {
     fi
 }
 
+# 从指定目录安装配置文件
+install_configs_from_dir() {
+    local source_dir="$1"
+    local user_config_dir="$HOME/.cyber-zen/configs"
+    mkdir -p "$user_config_dir"
+    
+    local config_files=("file-types.toml" "categories.toml" "commit-templates.toml")
+    local success_count=0
+    
+    print_info "从 $source_dir 复制配置文件..."
+    for config_file in "${config_files[@]}"; do
+        local source_file="$source_dir/$config_file"
+        local target_file="$user_config_dir/$config_file"
+        
+        if [ -f "$source_file" ]; then
+            if cp "$source_file" "$target_file"; then
+                print_success "✓ $config_file 复制成功"
+                ((success_count++))
+            else
+                print_warning "⚠ $config_file 复制失败"
+            fi
+        else
+            print_warning "⚠ $config_file 不存在于 $source_dir"
+        fi
+    done
+    
+    if [ $success_count -eq ${#config_files[@]} ]; then
+        print_success "✓ 所有配置文件安装完成: $user_config_dir"
+    fi
+}
+
 # 安装配置文件
 install_configs() {
     print_info "安装配置文件..."
@@ -281,33 +329,54 @@ install_configs() {
     local user_config_dir="$HOME/.cyber-zen/configs"
     mkdir -p "$user_config_dir"
     
-    # 下载配置文件
-    print_info "正在下载配置文件..."
+    # 尝试找到项目配置目录
+    local project_config_dir=""
     
-    # 配置文件下载地址
-    local base_url="https://raw.githubusercontent.com/hex2rgb/cyber-zen-tools/main/configs"
-    local config_files=("file-types.toml" "categories.toml" "commit-templates.toml")
-    
-    local success_count=0
-    for config_file in "${config_files[@]}"; do
-        local download_url="$base_url/$config_file"
-        local target_file="$user_config_dir/$config_file"
-        
-        print_info "下载: $config_file"
-        if curl -fsSL "$download_url" -o "$target_file"; then
-            print_success "✓ $config_file 下载成功"
-            ((success_count++))
-        else
-            print_warning "⚠ $config_file 下载失败"
+    # 方法1: 从脚本所在目录查找（如果脚本在项目目录中）
+    local script_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+    if [ -d "$script_dir/../configs" ]; then
+        project_config_dir="$(cd "$script_dir/../configs" && pwd)"
+    # 方法2: 从当前工作目录查找
+    elif [ -d "./configs" ]; then
+        project_config_dir="$(cd "./configs" && pwd)"
+    # 方法3: 从可执行文件目录查找（如果已安装）
+    elif [ -f "$INSTALL_DIR/$BINARY_NAME" ]; then
+        local exe_dir="$(dirname "$(readlink -f "$INSTALL_DIR/$BINARY_NAME" 2>/dev/null || echo "$INSTALL_DIR/$BINARY_NAME")")"
+        if [ -d "$exe_dir/configs" ]; then
+            project_config_dir="$exe_dir/configs"
         fi
-    done
+    fi
     
-    if [ $success_count -eq ${#config_files[@]} ]; then
-        print_success "✓ 所有配置文件安装完成: $user_config_dir"
-        print_info "配置文件位置: $user_config_dir"
+    # 如果找到本地配置目录，从本地复制
+    if [ -n "$project_config_dir" ] && [ -d "$project_config_dir" ]; then
+        install_configs_from_dir "$project_config_dir"
     else
-        print_warning "⚠ 部分配置文件安装失败，但程序仍可正常使用"
-        print_info "已安装: $success_count/${#config_files[@]} 个配置文件"
+        # 如果本地没有，尝试从远程下载
+        print_info "未找到本地配置文件，尝试从远程下载..."
+        local base_url="https://raw.githubusercontent.com/hex2rgb/cyber-zen-tools-rust/main/configs"
+        local config_files=("file-types.toml" "categories.toml" "commit-templates.toml")
+        local success_count=0
+        
+        for config_file in "${config_files[@]}"; do
+            local download_url="$base_url/$config_file"
+            local target_file="$user_config_dir/$config_file"
+            
+            print_info "下载: $config_file"
+            if curl -fsSL "$download_url" -o "$target_file"; then
+                print_success "✓ $config_file 下载成功"
+                ((success_count++))
+            else
+                print_warning "⚠ $config_file 下载失败"
+            fi
+        done
+        
+        if [ $success_count -eq ${#config_files[@]} ]; then
+            print_success "✓ 所有配置文件安装完成: $user_config_dir"
+        else
+            print_warning "⚠ 部分配置文件安装失败，但程序仍可正常使用"
+            print_info "已安装: $success_count/${#config_files[@]} 个配置文件"
+            print_info "提示: 可以手动运行 scripts/install-configs.sh 安装配置文件"
+        fi
     fi
 }
 

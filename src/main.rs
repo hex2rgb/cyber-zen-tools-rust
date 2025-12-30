@@ -7,7 +7,7 @@ use config::init_config;
 #[derive(Parser)]
 #[command(name = "cyber-zen")]
 #[command(about = "跨平台命令行工具集，专注于开发工作流优化")]
-#[command(version = "1.0.0")]
+#[command(version = env!("CARGO_PKG_VERSION"))]
 struct Cli {
     #[command(subcommand)]
     command: Commands,
