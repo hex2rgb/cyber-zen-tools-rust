@@ -243,10 +243,14 @@ fn build_commit_prompt(changes: &[ChangeInfo], _file_type_manager: &FileTypeMana
 /// 调用本地模型生成文本（使用 Candle）
 fn call_local_model(model_path: &PathBuf, prompt: &str) -> Result<String, Box<dyn std::error::Error>> {
     println!("{} {}", "正在加载本地模型:".yellow(), model_path.display());
+    println!("{} {}", "模型文件存在:".cyan(), model_path.exists());
     
     // 加载模型
     let mut model = CandleModel::load_from_path(model_path)
-        .map_err(|e| format!("模型加载失败: {}", e))?;
+        .map_err(|e| {
+            eprintln!("{} {}", "详细错误信息:".red(), e);
+            format!("模型加载失败: {}", e)
+        })?;
     
     println!("{}", "✓ 模型加载成功".green());
     println!("{}", "正在生成文本...".yellow());

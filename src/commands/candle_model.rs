@@ -37,8 +37,19 @@ impl CandleModel {
         let config_path = find_config_file(model_path)?;
         println!("  找到 config.json: {}", config_path.display());
         
-        let config_content = fs::read_to_string(&config_path)
-            .with_context(|| format!("无法读取 config.json: {}", config_path.display()))?;
+        println!("  读取 config.json 内容...");
+        let config_content = match fs::read_to_string(&config_path) {
+            Ok(content) => {
+                println!("  ✓ config.json 读取成功，大小: {} bytes", content.len());
+                content
+            }
+            Err(e) => {
+                eprintln!("  ✗ 无法读取 config.json: {}", e);
+                eprintln!("    文件路径: {}", config_path.display());
+                eprintln!("    文件存在: {}", config_path.exists());
+                anyhow::bail!("无法读取 config.json ({}): {}", config_path.display(), e);
+            }
+        };
         
         // 使用 Candle 官方的 QwenConfig 解析配置
         println!("  解析 config.json...");
