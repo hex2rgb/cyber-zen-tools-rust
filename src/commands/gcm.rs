@@ -87,7 +87,13 @@ fn analyze_git_changes(file_type_manager: &FileTypeManager) -> Result<Vec<Change
         }
 
         let status = line.chars().next().unwrap().to_string();
-        let file = line[3..].trim().to_string();
+        // git status --porcelain 格式: "XY filename"
+        // 前两个字符是状态，第三个是空格，从第四个字符开始是文件名
+        let file = if line.len() > 3 {
+            line.chars().skip(3).collect::<String>().trim().to_string()
+        } else {
+            continue;
+        };
 
         let change = ChangeInfo {
             file: file.clone(),
