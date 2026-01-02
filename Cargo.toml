@@ -15,9 +15,25 @@ tokio = { version = "1.35", features = ["full"] }
 image = "0.24"
 regex = "1.10"
 chrono = "0.4"
+candle-core = "0.9"
+candle-nn = "0.9"
+candle-transformers = "0.9"
+tokenizers = "0.15"
+anyhow = "1.0"
+serde_json = "1.0"
+
+[profile.dev]
+# 开发模式配置
+incremental = true  # 启用增量编译
 
 [profile.release]
 opt-level = 3
 lto = true
 codegen-units = 1
+
+# 并行编译说明：
+# - Cargo 默认会自动使用所有可用 CPU 核心进行并行编译
+# - 已创建 .cargo/config.toml 配置文件
+# - 可以通过环境变量 CARGO_BUILD_JOBS 或 .cargo/config.toml 中的 jobs 设置来控制
+# - 开发时使用 `cargo build` 会充分利用并行编译
 

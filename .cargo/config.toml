@@ -1,0 +1,16 @@
+# Cargo 编译配置
+# 优化开发模式下的并行编译性能
+
+[build]
+# 并行编译任务数（默认自动检测 CPU 核心数）
+# 可以设置为具体数字，例如：jobs = 8
+# 留空则使用默认值（自动检测）
+# jobs = 8
+
+# 增量编译（在 Cargo.toml 的 [profile.dev] 中已配置）
+# incremental = true
+
+# 其他优化选项
+[target.'cfg(all())']
+# 可以在这里添加特定目标的配置
+

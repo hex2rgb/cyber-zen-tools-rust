@@ -1,4 +1,4 @@
-use std::path::{Path, PathBuf};
+use std::path::PathBuf;
 
 pub fn init_config() -> Result<(), Box<dyn std::error::Error>> {
     // 配置初始化逻辑（如果需要）
@@ -19,6 +19,15 @@ pub fn get_config_dir() -> PathBuf {
         PathBuf::from(home).join(".cyber-zen").join("configs")
     } else {
         PathBuf::from("/tmp/.cyber-zen/configs")
+    }
+}
+
+pub fn get_model_dir() -> PathBuf {
+    // 模型文件目录
+    if let Ok(home) = std::env::var("HOME") {
+        PathBuf::from(home).join(".cyber-zen").join("models")
+    } else {
+        PathBuf::from("/tmp/.cyber-zen/models")
     }
 }
 

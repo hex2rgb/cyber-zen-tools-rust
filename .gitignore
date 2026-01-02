@@ -58,3 +58,7 @@ docs/
 # 本地测试文件
 testdata/
 
+# AI 模型文件（体积大，不提交到仓库）
+*.gguf
+models/
+

@@ -14,9 +14,11 @@ NC='\033[0m'
 
 # 变量定义
 BINARY_NAME="cyber-zen-tools"
-BUILD_DIR="target/release"
+BUILD_DIR_RELEASE="target/release"
+BUILD_DIR_DEBUG="target/debug"
 LINK_DIR="/usr/local/bin"
 INSTALL_NAME="cyber-zen"
+BUILD_MODE="release"  # 默认使用 release 模式
 
 # 打印带颜色的消息
 print_info() {
@@ -39,31 +41,53 @@ print_error() {
 show_help() {
     echo "Cyben Zen Tools 软链接创建脚本"
     echo ""
-    echo "用法: $0"
+    echo "用法: $0 [create|debug|help]"
+    echo ""
+    echo "命令:"
+    echo "  create  - 创建 release 版本的软链接（默认）"
+    echo "  debug   - 创建 debug 版本的软链接"
+    echo "  help    - 显示此帮助信息"
     echo ""
     echo "功能:"
     echo "  创建软链接到 $LINK_DIR"
     echo ""
     echo "注意:"
-    echo "  - 需要先运行 'make release' 构建程序"
+    echo "  - release: 需要先运行 'cargo build --release' 或 'make release'"
+    echo "  - debug:   需要先运行 'cargo build' 或 'make build'"
     echo "  - 需要 sudo 权限创建软链接"
 }
 
 # 检查构建文件
 check_build_file() {
-    if [ ! -f "$BUILD_DIR/$BINARY_NAME" ]; then
-        print_error "构建文件不存在: $BUILD_DIR/$BINARY_NAME"
-        print_info "请先运行 'make release' 构建程序"
+    local build_dir=$1
+    local build_type=$2
+    
+    if [ ! -f "$build_dir/$BINARY_NAME" ]; then
+        print_error "构建文件不存在: $build_dir/$BINARY_NAME"
+        if [ "$build_type" = "release" ]; then
+            print_info "请先运行 'cargo build --release' 或 'make release' 构建程序"
+        else
+            print_info "请先运行 'cargo build' 或 'make build' 构建程序"
+        fi
         exit 1
     fi
 }
 
 # 创建软链接
 create_link() {
-    print_info "创建软链接到 $LINK_DIR..."
+    local build_type=${1:-release}
+    local build_dir=""
+    
+    if [ "$build_type" = "debug" ]; then
+        build_dir="$BUILD_DIR_DEBUG"
+        print_info "创建 debug 版本的软链接到 $LINK_DIR..."
+    else
+        build_dir="$BUILD_DIR_RELEASE"
+        print_info "创建 release 版本的软链接到 $LINK_DIR..."
+    fi
     
     # 检查构建文件
-    check_build_file
+    check_build_file "$build_dir" "$build_type"
     
     # 检查权限
     if [ ! -w "$LINK_DIR" ]; then
@@ -73,8 +97,8 @@ create_link() {
         echo "  # 删除现有软链接（如果存在）"
         echo "  sudo rm -f $LINK_DIR/$INSTALL_NAME"
         echo ""
-        echo "  # 创建新的软链接"
-        echo "  sudo ln -sf $(pwd)/$BUILD_DIR/$BINARY_NAME $LINK_DIR/$INSTALL_NAME"
+        echo "  # 创建新的软链接 ($build_type 版本)"
+        echo "  sudo ln -sf $(pwd)/$build_dir/$BINARY_NAME $LINK_DIR/$INSTALL_NAME"
         echo ""
         return 1
     fi
@@ -86,17 +110,20 @@ create_link() {
     fi
     
     # 创建新的软链接
-    ln -sf "$(pwd)/$BUILD_DIR/$BINARY_NAME" "$LINK_DIR/$INSTALL_NAME"
+    ln -sf "$(pwd)/$build_dir/$BINARY_NAME" "$LINK_DIR/$INSTALL_NAME"
     
-    print_success "软链接创建完成: $LINK_DIR/$INSTALL_NAME"
-    print_info "目标文件: $(pwd)/$BUILD_DIR/$BINARY_NAME"
+    print_success "软链接创建完成: $LINK_DIR/$INSTALL_NAME ($build_type 版本)"
+    print_info "目标文件: $(pwd)/$build_dir/$BINARY_NAME"
 }
 
 # 主函数
 main() {
     case "${1:-create}" in
         "create"|"")
-            create_link
+            create_link "release"
+            ;;
+        "debug")
+            create_link "debug"
             ;;
         "help"|"-h"|"--help")
             show_help
