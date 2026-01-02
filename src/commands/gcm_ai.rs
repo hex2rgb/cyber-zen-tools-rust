@@ -250,10 +250,25 @@ fn call_local_model(model_path: &PathBuf, prompt: &str) -> Result<String, Box<dy
     
     println!("{}", "✓ 模型加载成功".green());
     println!("{}", "正在生成文本...".yellow());
+    println!("{} {}", "输入 prompt 长度:".cyan(), prompt.len());
     
     // 生成文本（最大 200 tokens）
     let output = model.generate(prompt, 200)
         .map_err(|e| format!("文本生成失败: {}", e))?;
+    
+    println!("{} {}", "生成文本长度:".cyan(), output.len());
+    println!("{} {}", "生成内容:".cyan(), &output);
+    
+    // 验证输出格式
+    if !output.contains(':') && !output.is_empty() {
+        // 如果没有冒号，尝试添加默认类型
+        if output.starts_with("feat") || output.starts_with("fix") || output.starts_with("refactor") {
+            // 已经是正确的格式
+        } else {
+            // 尝试添加 feat: 前缀
+            return Ok(format!("feat: {}", output));
+        }
+    }
     
     Ok(output)
 }
