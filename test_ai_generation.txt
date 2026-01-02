@@ -1,0 +1,7 @@
+这是一个测试文件，用于验证 gcm-ai 命令的 AI 生成功能。
+
+测试内容：
+- 配置文件已从 YAML 迁移到 TOML
+- Candle 模型集成已实现
+- Qwen2.5-Coder-0.5B-Instruct 模型已配置
+
