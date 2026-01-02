@@ -39,7 +39,9 @@ pub fn run_gcm_ai(
                     m
                 }
                 Err(e) => {
-                    println!("{} {}", "AI 生成失败:".red(), e);
+                    eprintln!("{} {}", "AI 生成失败:".red(), e);
+                    eprintln!("{}", "详细错误信息:".yellow());
+                    eprintln!("{}", format!("{:?}", e));
                     println!("{}", "使用默认提交信息: update".yellow());
                     "update".to_string()
                 }
@@ -246,11 +248,15 @@ fn call_local_model(model_path: &PathBuf, prompt: &str) -> Result<String, Box<dy
     println!("{} {}", "模型文件存在:".cyan(), model_path.exists());
     
     // 加载模型
-    let mut model = CandleModel::load_from_path(model_path)
-        .map_err(|e| {
-            eprintln!("{} {}", "详细错误信息:".red(), e);
-            format!("模型加载失败: {}", e)
-        })?;
+    let mut model = match CandleModel::load_from_path(model_path) {
+        Ok(model) => model,
+        Err(e) => {
+            eprintln!("{}", "模型加载详细错误:".red());
+            eprintln!("{}", format!("{:?}", e));
+            eprintln!("{}", format!("错误链: {}", e.chain().map(|e| e.to_string()).collect::<Vec<_>>().join(" -> ")));
+            return Err(format!("模型加载失败: {}", e).into());
+        }
+    };
     
     println!("{}", "✓ 模型加载成功".green());
     println!("{}", "正在生成文本...".yellow());

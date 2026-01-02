@@ -76,8 +76,13 @@ impl CandleModel {
             safetensors_files.push(model_path.clone());
         } else {
             // 查找所有 model*.safetensors 文件
-            for entry in fs::read_dir(model_dir)? {
-                let entry = entry?;
+            println!("  在目录中查找 model*.safetensors 文件: {}", model_dir.display());
+            let entries = fs::read_dir(model_dir)
+                .with_context(|| format!("无法读取模型目录: {}", model_dir.display()))?;
+            
+            for entry in entries {
+                let entry = entry
+                    .with_context(|| format!("无法读取目录条目: {}", model_dir.display()))?;
                 let path = entry.path();
                 if let Some(file_name) = path.file_name().and_then(|n| n.to_str()) {
                     if file_name.starts_with("model") && file_name.ends_with(".safetensors") {
