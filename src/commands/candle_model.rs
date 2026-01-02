@@ -179,21 +179,23 @@ impl CandleModel {
         
         let mut generated_tokens = Vec::new();
         let eos_token_id = 151643u32; // Qwen 的 <|im_end|> token ID
-        let mut current_input = input_tensor;
-        let mut seq_pos = 0usize; // seq_pos 从 0 开始，表示当前处理的序列位置
+        let mut all_tokens: Vec<u32> = input_ids.clone(); // 保存所有 tokens（包括生成的）
         
         println!("  初始序列长度: {}", initial_seq_len);
         println!("  最大生成 tokens: {}", max_tokens);
         
         for step in 0..max_tokens {
-            // 调用模型 forward
-            // Qwen2 的 forward 方法需要 (input, seq_pos, cache) 三个参数
-            // seq_pos 表示当前处理的序列位置（从 0 开始）
-            // 第三个参数是 Option<&Tensor>，这里使用 None（简化处理，不使用 KV cache）
+            // 将当前所有 tokens 转换为 tensor
+            // 重要：不使用 KV cache 时，必须每次传入完整序列，seq_pos = 0
+            let current_input = Tensor::new(all_tokens.as_slice(), &self.device)?
+                .unsqueeze(0)?; // [1, seq_len]
+            
             let current_seq_len = current_input.dim(1)?;
             
-            let logits = self.model.forward(&current_input, seq_pos, None)
-                .map_err(|e| anyhow::anyhow!("模型推理失败 (step {}, seq_pos {}, seq_len {}): {}", step, seq_pos, current_seq_len, e))?;
+            // 调用模型 forward
+            // 不使用 KV cache 时，seq_pos 始终为 0
+            let logits = self.model.forward(&current_input, 0, None)
+                .map_err(|e| anyhow::anyhow!("模型推理失败 (step {}, seq_len {}): {}", step, current_seq_len, e))?;
             
             // 获取最后一个位置的 logits（用于预测下一个 token）
             // logits 形状应该是 [batch_size, seq_len, vocab_size]
@@ -215,19 +217,13 @@ impl CandleModel {
             
             // 检查是否遇到结束符
             if next_token_id == eos_token_id {
+                println!("  [生成结束] 遇到 EOS token");
                 break;
             }
             
+            // 添加新生成的 token
+            all_tokens.push(next_token_id);
             generated_tokens.push(next_token_id);
-            
-            // 更新输入：将新 token 添加到序列末尾
-            // 注意：这里简化处理，实际可能需要更复杂的 KV cache 管理
-            let next_token_tensor = Tensor::new(&[next_token_id], &self.device)?
-                .unsqueeze(0)?; // [1, 1]
-            
-            // 拼接新 token 到序列
-            current_input = Tensor::cat(&[&current_input, &next_token_tensor], 1)?;
-            seq_pos = current_input.dim(1)? - 1; // 更新序列位置为最后一个位置
             
             // 每 10 个 token 输出一次进度
             if (step + 1) % 10 == 0 {
