@@ -1,9 +1,10 @@
 use colored::*;
-use crate::config::{FileTypeManager, get_model_dir};
+use crate::config::{FileTypeManager, get_model_folder_path};
 use std::io::{self, Write};
 use std::path::PathBuf;
 use std::process::{Command, Stdio};
 use crate::commands::candle_model::CandleModel;
+use crate::commands::candle_model_quantized::CandleModelQuantized;
 
 pub struct ChangeInfo {
     file: String,
@@ -17,176 +18,151 @@ pub fn run_gcm_ai(
     rewrite: bool,
     max_commits: Option<usize>,
     dry_run: bool,
-    model: Option<String>,
 ) -> Result<(), Box<dyn std::error::Error>> {
-    // 查找模型文件
-    let model_path = find_model_file(model)?;
+    // 获取模型文件路径（使用配置的模型文件夹）
+    let model_path = find_model_file()?;
     println!("{} {}", "✓ 找到模型文件:".green(), model_path.display());
     
     if rewrite {
         // 重写历史提交
         rewrite_commit_history(max_commits, dry_run, &model_path)?;
-    } else {
-        // 生成新提交消息
-        let msg = if let Some(m) = message {
-            println!("{} {}", "使用用户提供的提交信息:".cyan(), m);
-            m
         } else {
-            println!("{}", "正在使用 AI 生成提交信息...".yellow());
-            match generate_ai_commit_message(&model_path) {
-                Ok(m) => {
-                    println!("{}", "AI 生成成功！".green());
-                    m
+            // 生成新提交消息
+            let msg = if let Some(m) = message {
+                println!("{} {}", "使用用户提供的提交信息:".cyan(), m);
+                m
+            } else {
+                println!("{}", "正在使用 AI 生成提交信息...".yellow());
+                match generate_ai_commit_message(&model_path) {
+                    Ok(m) => {
+                        println!("{}", "AI 生成成功！".green());
+                        m
+                    }
+                    Err(e) => {
+                        eprintln!("{} {}", "AI 生成失败:".red(), e);
+                        eprintln!("{}", "详细错误信息:".yellow());
+                        eprintln!("{}", format!("{:?}", e));
+                        println!("{}", "使用默认提交信息: update".yellow());
+                        "update".to_string()
+                    }
                 }
-                Err(e) => {
-                    eprintln!("{} {}", "AI 生成失败:".red(), e);
-                    eprintln!("{}", "详细错误信息:".yellow());
-                    eprintln!("{}", format!("{:?}", e));
-                    println!("{}", "使用默认提交信息: update".yellow());
-                    "update".to_string()
-                }
+            };
+
+            if dry_run {
+                // 预览模式：只显示生成的 commit message，不执行 Git 操作
+                println!("\n{}", "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━".yellow());
+                println!("{}", "📋 预览模式（Dry Run）".yellow().bold());
+                println!("{}", "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━".yellow());
+                println!("{} {}", "生成的 Commit Message:".cyan().bold(), msg);
+                println!("\n{}", "以下是将要执行的 Git 操作：".yellow());
+                println!("  1. git add .");
+                println!("  2. git commit -m \"{}\" --no-verify", msg);
+                println!("  3. git push");
+                println!("\n{}", "（预览模式，不会实际执行）".yellow());
+                println!("{}", "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━".yellow());
+            } else {
+                // 实际执行 Git 操作
+                println!("{}", "开始执行 Git 操作...".green());
+                println!("{} {}", "提交信息:".cyan(), msg);
+
+                check_git_repo()?;
+
+                println!("{}", "执行: git add .".yellow());
+                exec_git_command(&["add", "."])?;
+                println!("{}", "✓ git add . 完成".green());
+
+                println!("{} {}", "执行: git commit -m \"{}\" --no-verify".yellow(), msg);
+                exec_git_command(&["commit", "-m", &msg, "--no-verify"])?;
+                println!("{}", "✓ git commit 完成".green());
+
+                println!("{}", "执行: git push".yellow());
+                exec_git_command(&["push"])?;
+                println!("{}", "✓ git push 完成".green());
+
+                println!("{}", "🎉 Git 操作完成！".green());
             }
-        };
-
-        println!("{}", "开始执行 Git 操作...".green());
-        println!("{} {}", "提交信息:".cyan(), msg);
-
-        check_git_repo()?;
-
-        println!("{}", "执行: git add .".yellow());
-        exec_git_command(&["add", "."])?;
-        println!("{}", "✓ git add . 完成".green());
-
-        println!("{} {}", "执行: git commit -m \"{}\" --no-verify".yellow(), msg);
-        exec_git_command(&["commit", "-m", &msg, "--no-verify"])?;
-        println!("{}", "✓ git commit 完成".green());
-
-        println!("{}", "执行: git push".yellow());
-        exec_git_command(&["push"])?;
-        println!("{}", "✓ git push 完成".green());
-
-        println!("{}", "🎉 Git 操作完成！".green());
-    }
+        }
 
     Ok(())
 }
 
-/// 查找模型文件（支持 Safetensors 格式）
-/// 优先级：1. 命令行指定 2. default_* 目录中的 model.safetensors 3. default_*.safetensors 文件
-fn find_model_file(model_name: Option<String>) -> Result<PathBuf, Box<dyn std::error::Error>> {
-    let model_dir = get_model_dir();
+/// 查找模型文件（支持 safetensors 和 gguf 格式）
+/// 使用配置的模型文件夹路径
+fn find_model_file() -> Result<PathBuf, Box<dyn std::error::Error>> {
+    let model_folder = get_model_folder_path();
     
-    // 确保模型目录存在
-    if !model_dir.exists() {
-        std::fs::create_dir_all(&model_dir)?;
-    }
-    
-    // 1. 如果指定了 --model 参数
-    if let Some(name) = model_name {
-        // 先尝试在子目录中查找
-        let dir_path = model_dir.join(&name);
-        let file_in_dir = dir_path.join("model.safetensors");
-        if file_in_dir.exists() {
-            return Ok(file_in_dir);
-        }
-        
-        // 尝试直接文件
-        let path = model_dir.join(format!("{}.safetensors", name));
-        if path.exists() {
-            return Ok(path);
-        }
-        
-        // 兼容旧格式 .gguf（如果存在）
-        let path_gguf = model_dir.join(format!("{}.gguf", name));
-        if path_gguf.exists() {
-            eprintln!("⚠️  警告: 找到 .gguf 格式文件，建议使用 .safetensors 格式");
-            return Ok(path_gguf);
-        }
-        
+    // 检查模型文件夹是否存在
+    if !model_folder.exists() {
         return Err(format!(
-            "模型文件不存在: {}，请检查以下位置：\n  1. {}/model.safetensors\n  2. {}.safetensors",
-            name,
-            dir_path.display(),
-            model_dir.join(&name).display()
+            "模型文件夹不存在: {}",
+            model_folder.display()
         ).into());
     }
     
-    // 2. 查找 default_* 目录中的 model.safetensors
-    let mut default_models = Vec::new();
-    if model_dir.exists() {
-        for entry in std::fs::read_dir(&model_dir)? {
-            let entry = entry?;
-            let path = entry.path();
-            
-            // 如果是目录且以 default_ 开头
-            if path.is_dir() {
-                if let Some(dir_name) = path.file_name().and_then(|n| n.to_str()) {
-                    if dir_name.starts_with("default_") {
-                        let model_file = path.join("model.safetensors");
-                        if model_file.exists() {
-                            default_models.push(model_file);
-                        }
-                    }
-                }
-            }
-            
-            // 如果是文件且以 default_ 开头，以 .safetensors 结尾
-            if path.is_file() {
-                if let Some(file_name) = path.file_name().and_then(|n| n.to_str()) {
-                    if file_name.ends_with(".safetensors") && file_name.starts_with("default_") {
-                        default_models.push(path);
-                    }
-                }
+    // 优先检查 GGUF 文件（量化模型）
+    if let Ok(entries) = model_folder.read_dir() {
+        let mut gguf_files: Vec<_> = entries
+            .filter_map(|e| e.ok())
+            .map(|e| e.path())
+            .filter(|p| {
+                p.extension()
+                    .and_then(|ext| ext.to_str())
+                    .map(|ext| ext == "gguf")
+                    .unwrap_or(false)
+            })
+            .collect();
+        
+        if !gguf_files.is_empty() {
+            gguf_files.sort();
+            if let Some(gguf_file) = gguf_files.first() {
+                println!("{} {}", "找到 GGUF 量化模型:".cyan(), gguf_file.display());
+                return Ok(gguf_file.clone());
             }
         }
     }
     
-    // 如果没找到 .safetensors，尝试兼容 .gguf（旧格式）
-    if default_models.is_empty() {
-        for entry in std::fs::read_dir(&model_dir)? {
-            let entry = entry?;
-            let path = entry.path();
-            
-            // 目录中的 .gguf
-            if path.is_dir() {
-                if let Some(dir_name) = path.file_name().and_then(|n| n.to_str()) {
-                    if dir_name.starts_with("default_") {
-                        let model_file = path.join("model.gguf");
-                        if model_file.exists() {
-                            default_models.push(model_file);
-                        }
-                    }
-                }
-            }
-            
-            // 直接文件 .gguf
-            if path.is_file() {
-                if let Some(file_name) = path.file_name().and_then(|n| n.to_str()) {
-                    if file_name.ends_with(".gguf") && file_name.starts_with("default_") {
-                        default_models.push(path);
-                    }
-                }
-            }
+    // 如果没有 GGUF 文件，检查 safetensors 文件（普通模型）
+    let index_file = model_folder.join("model.safetensors.index.json");
+    let single_file = model_folder.join("model.safetensors");
+    
+    // 检查是否有分片文件
+    let mut has_shards = false;
+    if let Ok(entries) = model_folder.read_dir() {
+        has_shards = entries.filter_map(|e| e.ok())
+            .any(|e| {
+                e.path().file_name()
+                    .and_then(|n| n.to_str())
+                    .map(|n| n.starts_with("model-") && n.ends_with(".safetensors"))
+                    .unwrap_or(false)
+            });
+    }
+    
+    // 返回第一个分片文件、单文件或 index 文件路径
+    if has_shards {
+        let mut shard_files: Vec<_> = model_folder.read_dir()?
+            .filter_map(|e| e.ok())
+            .map(|e| e.path())
+            .filter(|p| {
+                p.file_name()
+                    .and_then(|n| n.to_str())
+                    .map(|n| n.starts_with("model-") && n.ends_with(".safetensors"))
+                    .unwrap_or(false)
+            })
+            .collect();
+        shard_files.sort();
+        if let Some(first_shard) = shard_files.first() {
+            return Ok(first_shard.clone());
         }
-        if !default_models.is_empty() {
-            eprintln!("⚠️  警告: 找到 .gguf 格式文件，建议使用 .safetensors 格式");
-        }
+    } else if single_file.exists() {
+        return Ok(single_file);
+    } else if index_file.exists() {
+        return Ok(index_file);
     }
     
-    if default_models.is_empty() {
-        return Err(format!(
-            "未找到默认模型文件，请检查以下位置：\n  1. {}/default_*/model.safetensors（目录形式）\n  2. {}/default_*.safetensors（文件形式）",
-            model_dir.display(),
-            model_dir.display()
-        ).into());
-    }
-    
-    if default_models.len() > 1 {
-        eprintln!("⚠️  警告: 找到多个默认模型文件，使用第一个: {}", 
-                 default_models[0].display());
-    }
-    
-    Ok(default_models[0].clone())
+    Err(format!(
+        "未找到模型文件，请检查: {}/model*.safetensors 或 *.gguf",
+        model_folder.display()
+    ).into())
 }
 
 fn generate_ai_commit_message(model_path: &PathBuf) -> Result<String, Box<dyn std::error::Error>> {
@@ -201,8 +177,19 @@ fn generate_ai_commit_message(model_path: &PathBuf) -> Result<String, Box<dyn st
 
     display_changes(&changes);
     
-    // 构建 prompt
-    let prompt = build_commit_prompt(&changes, &file_type_manager);
+    // 获取代码 diff
+    println!("{}", "正在获取代码变更内容...".yellow());
+    let diff = get_git_diff()?;
+    
+    if diff.trim().is_empty() {
+        println!("{}", "警告: 未获取到代码变更内容，将仅使用文件名信息".yellow());
+    } else {
+        let diff_lines = diff.lines().count();
+        println!("{} {} {}", "✓ 获取到代码变更:".green(), diff_lines, "行");
+    }
+    
+    // 构建 prompt（包含代码 diff）
+    let prompt = build_commit_prompt(&changes, &diff, &file_type_manager);
     
     // 调用本地模型生成消息
     let ai_message = call_local_model(model_path, &prompt)?;
@@ -217,10 +204,46 @@ fn generate_ai_commit_message(model_path: &PathBuf) -> Result<String, Box<dyn st
     Ok(ai_message)
 }
 
-fn build_commit_prompt(changes: &[ChangeInfo], _file_type_manager: &FileTypeManager) -> String {
-    let mut prompt = String::from("根据以下 Git 变更，生成一个符合 Conventional Commits 规范的 commit message。\n\n");
-    prompt.push_str("变更内容：\n");
+/// 获取 Git diff（代码变更内容）
+fn get_git_diff() -> Result<String, Box<dyn std::error::Error>> {
+    // 首先尝试获取暂存区的 diff
+    let output = Command::new("git")
+        .arg("diff")
+        .arg("--cached")
+        .arg("--no-color")
+        .output()?;
     
+    if output.status.success() {
+        let diff = String::from_utf8_lossy(&output.stdout).to_string();
+        if !diff.trim().is_empty() {
+            return Ok(diff);
+        }
+    }
+    
+    // 如果没有暂存区变更，获取工作区的 diff
+    let output = Command::new("git")
+        .arg("diff")
+        .arg("--no-color")
+        .output()?;
+    
+    if output.status.success() {
+        Ok(String::from_utf8_lossy(&output.stdout).to_string())
+    } else {
+        Ok(String::new())
+    }
+}
+
+fn build_commit_prompt(
+    changes: &[ChangeInfo], 
+    diff: &str,
+    _file_type_manager: &FileTypeManager
+) -> String {
+    let mut prompt = String::from(
+        "你是一个专业的 Git 提交信息生成助手。根据以下代码变更，生成一个符合 Conventional Commits 规范的 commit message。\n\n"
+    );
+    
+    // 文件变更列表
+    prompt.push_str("变更文件：\n");
     for change in changes {
         let action = match change.status.as_str() {
             "A" => "新增",
@@ -232,55 +255,122 @@ fn build_commit_prompt(changes: &[ChangeInfo], _file_type_manager: &FileTypeMana
         prompt.push_str(&format!("- {} {} ({})\n", action, change.file, change.category));
     }
     
+    // 代码 Diff（限制长度避免超出上下文）
+    if !diff.trim().is_empty() {
+        prompt.push_str("\n代码变更内容：\n");
+        prompt.push_str("```diff\n");
+        
+        // 限制 diff 长度（减少到 500 行，避免内存溢出）
+        // 注意：对于 commit message 生成，500 行通常已经足够了解主要变更
+        const MAX_DIFF_LINES: usize = 500;
+        let diff_lines: Vec<&str> = diff.lines().take(MAX_DIFF_LINES).collect();
+        prompt.push_str(&diff_lines.join("\n"));
+        
+        let total_lines = diff.lines().count();
+        if total_lines > MAX_DIFF_LINES {
+            prompt.push_str(&format!("\n... (还有 {} 行变更，已截断)", total_lines - MAX_DIFF_LINES));
+        }
+        
+        prompt.push_str("\n```\n");
+    } else {
+        prompt.push_str("\n注意：未获取到具体的代码变更内容，仅根据文件名生成 commit message。\n");
+    }
+    
+    // 要求
     prompt.push_str("\n要求：\n");
     prompt.push_str("1. 使用中文\n");
     prompt.push_str("2. 格式：<type>: <description>\n");
     prompt.push_str("3. type 可以是：feat, fix, refactor, style, docs, test, chore, perf, cleanup\n");
-    prompt.push_str("4. description 要简洁明了，描述主要变更\n");
+    prompt.push_str("4. description 要简洁明了，准确描述代码变更的主要目的\n");
     prompt.push_str("5. 只返回 commit message，不要其他说明\n");
+    prompt.push_str("6. 根据代码变更的具体内容，而不是文件名，来判断变更类型\n");
+    if !diff.trim().is_empty() {
+        prompt.push_str("7. 优先分析代码变更的实际功能变化，而不是文件路径\n");
+    }
     
     prompt
 }
 
 /// 调用本地模型生成文本（使用 Candle）
+/// 支持 safetensors 和 gguf 两种格式
 fn call_local_model(model_path: &PathBuf, prompt: &str) -> Result<String, Box<dyn std::error::Error>> {
     println!("{} {}", "正在加载本地模型:".yellow(), model_path.display());
     println!("{} {}", "模型文件存在:".cyan(), model_path.exists());
     
-    // 加载模型
-    let mut model = match CandleModel::load_from_path(model_path) {
-        Ok(model) => model,
-        Err(e) => {
-            eprintln!("{}", "模型加载详细错误:".red());
-            eprintln!("{}", format!("{:?}", e));
-            eprintln!("{}", format!("错误链: {}", e.chain().map(|e| e.to_string()).collect::<Vec<_>>().join(" -> ")));
-            return Err(format!("模型加载失败: {}", e).into());
+    // 检查文件扩展名，判断使用哪种模型加载方式
+    let is_gguf = model_path.extension()
+        .and_then(|ext| ext.to_str())
+        .map(|ext| ext == "gguf")
+        .unwrap_or(false);
+    
+    if is_gguf {
+        // 使用量化模型（GGUF 格式）
+        println!("{}", "检测到 GGUF 格式，使用量化模型加载".cyan());
+        let mut model = match CandleModelQuantized::load_from_path(model_path) {
+            Ok(model) => model,
+            Err(e) => {
+                eprintln!("{}", "量化模型加载详细错误:".red());
+                eprintln!("{}", format!("{:?}", e));
+                return Err(format!("量化模型加载失败: {}", e).into());
+            }
+        };
+        
+        println!("{}", "✓ 量化模型加载成功".green());
+        println!("{}", "正在生成文本...".yellow());
+        println!("{} {}", "输入 prompt 长度:".cyan(), prompt.len());
+        
+        // 生成文本（最大 200 tokens）
+        let output = model.generate(prompt, 200)
+            .map_err(|e| format!("文本生成失败: {}", e))?;
+        
+        println!("{} {}", "生成文本长度:".cyan(), output.len());
+        println!("{} {}", "生成内容:".cyan(), &output);
+        
+        // 验证输出格式
+        if !output.contains(':') && !output.is_empty() {
+            if output.starts_with("feat") || output.starts_with("fix") || output.starts_with("refactor") {
+                // 已经是正确的格式
+            } else {
+                return Ok(format!("feat: {}", output));
+            }
         }
-    };
-    
-    println!("{}", "✓ 模型加载成功".green());
-    println!("{}", "正在生成文本...".yellow());
-    println!("{} {}", "输入 prompt 长度:".cyan(), prompt.len());
-    
-    // 生成文本（最大 200 tokens）
-    let output = model.generate(prompt, 200)
-        .map_err(|e| format!("文本生成失败: {}", e))?;
-    
-    println!("{} {}", "生成文本长度:".cyan(), output.len());
-    println!("{} {}", "生成内容:".cyan(), &output);
-    
-    // 验证输出格式
-    if !output.contains(':') && !output.is_empty() {
-        // 如果没有冒号，尝试添加默认类型
-        if output.starts_with("feat") || output.starts_with("fix") || output.starts_with("refactor") {
-            // 已经是正确的格式
-        } else {
-            // 尝试添加 feat: 前缀
-            return Ok(format!("feat: {}", output));
+        
+        Ok(output)
+    } else {
+        // 使用普通模型（safetensors 格式）
+        println!("{}", "检测到 safetensors 格式，使用普通模型加载".cyan());
+        let mut model = match CandleModel::load_from_path(model_path) {
+            Ok(model) => model,
+            Err(e) => {
+                eprintln!("{}", "模型加载详细错误:".red());
+                eprintln!("{}", format!("{:?}", e));
+                eprintln!("{}", format!("错误链: {}", e.chain().map(|e| e.to_string()).collect::<Vec<_>>().join(" -> ")));
+                return Err(format!("模型加载失败: {}", e).into());
+            }
+        };
+        
+        println!("{}", "✓ 模型加载成功".green());
+        println!("{}", "正在生成文本...".yellow());
+        println!("{} {}", "输入 prompt 长度:".cyan(), prompt.len());
+        
+        // 生成文本（最大 200 tokens）
+        let output = model.generate(prompt, 200)
+            .map_err(|e| format!("文本生成失败: {}", e))?;
+        
+        println!("{} {}", "生成文本长度:".cyan(), output.len());
+        println!("{} {}", "生成内容:".cyan(), &output);
+        
+        // 验证输出格式
+        if !output.contains(':') && !output.is_empty() {
+            if output.starts_with("feat") || output.starts_with("fix") || output.starts_with("refactor") {
+                // 已经是正确的格式
+            } else {
+                return Ok(format!("feat: {}", output));
+            }
         }
+        
+        Ok(output)
     }
-    
-    Ok(output)
 }
 
 fn rewrite_commit_history(

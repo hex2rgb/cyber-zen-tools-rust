@@ -54,12 +54,9 @@ enum Commands {
         /// 最大提交数量（仅用于重写）
         #[arg(long)]
         max_commits: Option<usize>,
-        /// 预览模式（仅用于重写，不实际修改）
+        /// 预览模式（不实际执行 Git 操作，仅显示生成的 commit message）
         #[arg(long)]
         dry_run: bool,
-        /// AI 模型名称（默认: llama3.2）
-        #[arg(long)]
-        model: Option<String>,
     },
 }
 
@@ -74,8 +71,8 @@ fn main() {
 
     let result = match cli.command {
         Commands::Gcm { message } => commands::gcm::run_gcm(message),
-        Commands::GcmAi { message, rewrite, max_commits, dry_run, model } => {
-            commands::gcm_ai::run_gcm_ai(message, rewrite, max_commits, dry_run, model)
+        Commands::GcmAi { message, rewrite, max_commits, dry_run } => {
+            commands::gcm_ai::run_gcm_ai(message, rewrite, max_commits, dry_run)
         }
         Commands::Compress { src, dist, rate } => commands::compress::run_compress(src, dist, rate),
         Commands::Server { dir, port } => commands::server::run_server(dir, port),
