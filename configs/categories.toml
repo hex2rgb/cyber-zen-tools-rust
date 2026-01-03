@@ -1,56 +1,94 @@
 # 文件分类配置
-# 目录路径分类规则
+# 目录路径分类规则（按优先级排序，先匹配的优先）
+
+# 测试相关（优先级最高）
 [categories.directory_patterns.test]
-patterns = ["test", "tests", "spec", "_test", "testing"]
+patterns = ["test", "tests", "spec", "_test", "testing", "__tests__", "__test__", "test_", "_spec", "e2e", "integration"]
 description = "测试文件"
 
+# 文档相关
 [categories.directory_patterns.docs]
-patterns = ["doc", "docs", "documentation", "readme", "guide", "manual"]
+patterns = ["doc", "docs", "documentation", "readme", "guide", "manual", "wiki", "javadoc", "godoc"]
 description = "文档文件"
 
-[categories.directory_patterns.source]
-patterns = ["src", "app", "lib", "packages", "internal", "pkg", "main", "core"]
-description = "源代码"
-
+# 配置相关
 [categories.directory_patterns.config]
-patterns = ["config", "conf", "settings", "env", "cfg"]
+patterns = ["config", "conf", "settings", "env", "cfg", "configuration", "setting", "setup", ".config", ".env"]
 description = "配置文件"
 
-[categories.directory_patterns.scripts]
-patterns = ["script", "scripts", "bin", "tools", "build", "make"]
-description = "脚本文件"
-
-[categories.directory_patterns.assets]
-patterns = ["assets", "static", "public", "resources", "images", "styles", "fonts", "media"]
-description = "资源文件"
-
-[categories.directory_patterns.database]
-patterns = ["migrations", "db", "database", "models", "entities", "schema", "data"]
-description = "数据库文件"
-
+# 构建和部署相关
 [categories.directory_patterns.deployment]
-patterns = ["deploy", "docker", "k8s", "kubernetes", "helm", "terraform", "ansible", "ci", "cd"]
+patterns = ["deploy", "docker", "k8s", "kubernetes", "helm", "terraform", "ansible", "ci", "cd", ".github", ".gitlab", "workflows"]
 description = "部署文件"
 
+[categories.directory_patterns.build]
+patterns = ["build", "dist", "target", "out", "output", "bin", "obj", "builds", ".build"]
+description = "构建文件"
+
+# 脚本和工具
+[categories.directory_patterns.scripts]
+patterns = ["script", "scripts", "bin", "tools", "make", "tool", "tooling", "cli", "cmd"]
+description = "脚本文件"
+
+# 数据库相关
+[categories.directory_patterns.database]
+patterns = ["migrations", "db", "database", "models", "entities", "schema", "data", "dal", "dao", "repository", "repositories", "storage"]
+description = "数据库文件"
+
+# 前端资源
+[categories.directory_patterns.assets]
+patterns = ["assets", "static", "public", "resources", "images", "styles", "fonts", "media", "img", "css", "js", "staticfiles"]
+description = "资源文件"
+
+# UI 组件
 [categories.directory_patterns.components]
-patterns = ["components", "ui", "widgets", "elements", "blocks"]
+patterns = ["components", "ui", "widgets", "elements", "blocks", "parts", "modules", "component"]
 description = "UI 组件"
 
+# 页面相关
 [categories.directory_patterns.pages]
-patterns = ["pages", "views", "screens", "routes", "templates"]
+patterns = ["pages", "views", "screens", "routes", "templates", "tpl", "page", "view", "screen"]
 description = "页面文件"
 
-[categories.directory_patterns.utils]
-patterns = ["utils", "helpers", "common", "shared", "functions", "services"]
-description = "工具函数"
-
+# API 相关
 [categories.directory_patterns.api]
-patterns = ["api", "endpoints", "controllers", "handlers", "routes"]
+patterns = ["api", "endpoints", "controllers", "handlers", "routes", "rest", "graphql", "rpc", "service", "services"]
 description = "API 接口"
 
+# 中间件
 [categories.directory_patterns.middleware]
-patterns = ["middleware", "interceptors", "filters", "guards"]
+patterns = ["middleware", "interceptors", "filters", "guards", "middlewares", "interceptor"]
 description = "中间件"
+
+# 工具函数和通用代码
+[categories.directory_patterns.utils]
+patterns = ["utils", "helpers", "common", "shared", "functions", "services", "util", "helper", "utilities", "lib", "library", "libraries"]
+description = "工具函数"
+
+# 源代码（放在后面，因为很多目录都包含）
+[categories.directory_patterns.source]
+patterns = ["src", "app", "packages", "internal", "pkg", "main", "core", "source", "sources", "code", "application"]
+description = "源代码"
+
+# 业务逻辑
+[categories.directory_patterns.business]
+patterns = ["domain", "business", "logic", "service", "services", "businesslogic", "domainlogic"]
+description = "业务逻辑"
+
+# 基础设施
+[categories.directory_patterns.infrastructure]
+patterns = ["infra", "infrastructure", "platform", "foundation", "base", "base"]
+description = "基础设施"
+
+# 类型定义
+[categories.directory_patterns.types]
+patterns = ["types", "type", "interfaces", "interface", "contracts", "contract", "definitions", "definition", "models", "dto", "dto"]
+description = "类型定义"
+
+# 安全相关
+[categories.directory_patterns.security]
+patterns = ["auth", "authentication", "authorization", "security", "secure", "permission", "permissions", "guard", "guards"]
+description = "安全相关"
 
 # 默认分类
 [categories]

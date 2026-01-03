@@ -74,40 +74,101 @@ impl FileTypeManager {
     }
     
     pub fn get_file_type(&self, filename: &str) -> String {
+        let filename_lower = filename.to_lowercase();
+        
+        // 首先检查完整文件名匹配（用于配置文件等）
         for category in self.file_types.file_types.values() {
             for type_item in category.values() {
                 for ext in &type_item.extensions {
-                    if filename.ends_with(ext) {
+                    // 检查完整文件名匹配（用于 package.json, Dockerfile 等）
+                    if filename == ext || filename_lower == ext.to_lowercase() {
+                        return type_item.description.clone();
+                    }
+                    // 检查扩展名匹配
+                    if filename_lower.ends_with(&ext.to_lowercase()) {
                         return type_item.description.clone();
                     }
                 }
             }
         }
+        
+        // 如果没有匹配，尝试从文件名推断
+        let filename_lower = filename_lower.as_str();
+        if filename_lower.contains("test") || filename_lower.contains("spec") {
+            return "测试文件".to_string();
+        }
+        if filename_lower.contains("readme") || filename_lower.contains("changelog") {
+            return "文档文件".to_string();
+        }
+        if filename_lower.contains("config") || filename_lower.contains("setting") {
+            return "配置文件".to_string();
+        }
+        
         "其他文件".to_string()
     }
     
     pub fn get_file_category(&self, filepath: &str) -> String {
+        // 标准化路径（统一使用 / 作为分隔符）
+        let normalized_path = filepath.replace('\\', "/").to_lowercase();
+        
+        // 按优先级匹配（更具体的模式优先）
+        // 首先检查完整目录名匹配（更精确）
         for pattern in self.categories.directory_patterns.values() {
             for pat in &pattern.patterns {
-                if filepath.contains(pat) {
+                let pat_lower = pat.to_lowercase();
+                // 完整目录名匹配（包含路径分隔符）
+                if normalized_path.contains(&format!("/{}/", pat_lower)) || 
+                   normalized_path.starts_with(&format!("{}/", pat_lower)) ||
+                   normalized_path.ends_with(&format!("/{}", pat_lower)) ||
+                   normalized_path == pat_lower {
                     return pattern.description.clone();
                 }
             }
         }
+        
+        // 如果完整匹配失败，使用部分匹配作为备选
+        for pattern in self.categories.directory_patterns.values() {
+            for pat in &pattern.patterns {
+                let pat_lower = pat.to_lowercase();
+                if normalized_path.contains(&pat_lower) {
+                    return pattern.description.clone();
+                }
+            }
+        }
+        
         self.categories.default.clone()
     }
     
     pub fn get_commit_type(&self, added: i32, modified: i32, deleted: i32) -> String {
+        let total = added + modified + deleted;
+        
+        if total == 0 {
+            return "chore".to_string();
+        }
+        
+        // 单一操作类型的情况
         if added > 0 && modified == 0 && deleted == 0 {
             "feat".to_string()
         } else if modified > 0 && added == 0 && deleted == 0 {
             "fix".to_string()
         } else if deleted > 0 && added == 0 && modified == 0 {
             "cleanup".to_string()
-        } else if modified > 0 && added > 0 && deleted == 0 {
-            "refactor".to_string()
+        } 
+        // 混合操作类型的情况
+        else if added > 0 && modified > 0 && deleted == 0 {
+            // 新增 + 修改 = 重构或新功能
+            if added > modified {
+                "feat".to_string()  // 新增更多，视为新功能
+            } else {
+                "refactor".to_string()  // 修改更多，视为重构
+            }
+        } else if modified > 0 && deleted > 0 {
+            "refactor".to_string()  // 修改 + 删除 = 重构
+        } else if added > 0 && deleted > 0 {
+            "refactor".to_string()  // 新增 + 删除 = 重构（替换）
         } else {
-            "feat".to_string()
+            // 其他复杂情况，使用 refactor
+            "refactor".to_string()
         }
     }
     

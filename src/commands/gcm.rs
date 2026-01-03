@@ -162,21 +162,23 @@ fn generate_message_from_changes(changes: &[ChangeInfo], file_type_manager: &Fil
     }
 
     let commit_type = file_type_manager.get_commit_type(added, modified, deleted);
-    let summary = generate_summary(changes, &categories);
+    let summary = generate_summary(changes, &categories, file_type_manager);
     let details = generate_details(changes, file_type_manager);
 
     format!("{}: {}\n\n{}", commit_type, summary, details)
 }
 
-fn generate_summary(changes: &[ChangeInfo], categories: &HashMap<String, i32>) -> String {
+fn generate_summary(changes: &[ChangeInfo], categories: &HashMap<String, i32>, file_type_manager: &FileTypeManager) -> String {
     if changes.len() == 1 {
         let change = &changes[0];
-        return match change.status.as_str() {
-            "A" => format!("新增{}", change.category),
-            "M" => format!("优化{}", change.category),
-            "D" => format!("清理{}", change.category),
-            _ => "更新项目文件".to_string(),
+        let action = match change.status.as_str() {
+            "A" => file_type_manager.get_action_description("added"),
+            "M" => file_type_manager.get_action_description("modified"),
+            "D" => file_type_manager.get_action_description("deleted"),
+            "R" => file_type_manager.get_action_description("renamed"),
+            _ => "更新".to_string(),
         };
+        return format!("{}{}", action, change.category);
     }
 
     if categories.len() == 1 {
@@ -185,14 +187,20 @@ fn generate_summary(changes: &[ChangeInfo], categories: &HashMap<String, i32>) -
         }
     }
 
+    // 选择主要分类（出现次数最多的）
     let main_categories: Vec<String> = categories
         .iter()
-        .filter(|(_, &count)| count > 1)
+        .filter(|(_, &count)| count > 1 || categories.len() <= 3)  // 如果分类少于3个，都包含
         .map(|(category, _)| category.clone())
         .collect();
 
     if !main_categories.is_empty() {
-        return format!("更新{}", main_categories.join("、"));
+        if main_categories.len() <= 3 {
+            return format!("更新{}", main_categories.join("、"));
+        } else {
+            // 如果分类太多，只显示前3个
+            return format!("更新{}", main_categories.iter().take(3).cloned().collect::<Vec<_>>().join("、"));
+        }
     }
 
     "更新项目文件".to_string()

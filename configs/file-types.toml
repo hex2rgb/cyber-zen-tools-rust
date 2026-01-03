@@ -167,3 +167,105 @@ description = "媒体文件"
 extensions = [".pdf", ".doc", ".docx", ".xls", ".xlsx", ".ppt", ".pptx"]
 description = "Office 文档"
 
+# 前端框架和工具
+[file_types.frontend.tsconfig]
+extensions = ["tsconfig.json", "tsconfig.base.json", "tsconfig.app.json"]
+description = "TypeScript 配置"
+
+[file_types.frontend.babel]
+extensions = [".babelrc", ".babelrc.js", ".babelrc.json", "babel.config.js", "babel.config.json"]
+description = "Babel 配置"
+
+[file_types.frontend.webpack]
+extensions = ["webpack.config.js", "webpack.config.ts", "webpack.base.js", "webpack.dev.js", "webpack.prod.js"]
+description = "Webpack 配置"
+
+[file_types.frontend.vite]
+extensions = ["vite.config.js", "vite.config.ts", "vite.config.mjs"]
+description = "Vite 配置"
+
+[file_types.frontend.nextjs]
+extensions = ["next.config.js", "next.config.mjs", "next.config.ts"]
+description = "Next.js 配置"
+
+[file_types.frontend.nuxt]
+extensions = ["nuxt.config.js", "nuxt.config.ts"]
+description = "Nuxt 配置"
+
+# Rust 相关
+[file_types.backend.rust_cargo]
+extensions = ["Cargo.toml", "Cargo.lock"]
+description = "Rust Cargo 配置"
+
+[file_types.backend.rust_tests]
+extensions = [".rs"]
+description = "Rust 测试文件"
+# 注意：这个需要通过路径判断，不能仅通过扩展名
+
+# Go 相关
+[file_types.backend.go_mod]
+extensions = ["go.mod", "go.sum", "go.work"]
+description = "Go 模块配置"
+
+# Python 相关
+[file_types.backend.python_requirements]
+extensions = ["requirements.txt", "requirements-dev.txt", "requirements.in", "Pipfile", "Pipfile.lock", "poetry.lock", "pyproject.toml"]
+description = "Python 依赖配置"
+
+[file_types.backend.python_setup]
+extensions = ["setup.py", "setup.cfg", "MANIFEST.in"]
+description = "Python 打包配置"
+
+# Node.js 相关
+[file_types.backend.node_package]
+extensions = ["package.json", "package-lock.json", "yarn.lock", "pnpm-lock.yaml", ".npmrc", ".yarnrc"]
+description = "Node.js 包配置"
+
+[file_types.backend.node_config]
+extensions = [".nvmrc", ".node-version"]
+description = "Node.js 版本配置"
+
+# Java 相关
+[file_types.backend.java_maven]
+extensions = ["pom.xml", "pom.properties"]
+description = "Maven 配置"
+
+[file_types.backend.java_gradle]
+extensions = ["build.gradle", "build.gradle.kts", "settings.gradle", "settings.gradle.kts", "gradle.properties"]
+description = "Gradle 配置"
+
+# 容器和编排
+[file_types.build.docker]
+extensions = ["Dockerfile", "docker-compose.yml", "docker-compose.yaml", ".dockerignore", "Dockerfile.*"]
+description = "Docker 配置"
+
+[file_types.build.kubernetes]
+extensions = [".yaml", ".yml"]
+description = "Kubernetes 配置"
+# 注意：需要通过路径判断，不能仅通过扩展名
+
+[file_types.build.terraform]
+extensions = [".tf", ".tfvars", ".tfstate", ".hcl"]
+description = "Terraform 配置"
+
+# CI/CD
+[file_types.build.cicd]
+extensions = [".yml", ".yaml"]
+description = "CI/CD 配置"
+# 注意：通常位于 .github/workflows/, .gitlab-ci.yml 等路径
+
+# 编辑器配置
+[file_types.other.editor]
+extensions = [".editorconfig", ".vscode", ".idea", ".vs", ".vimrc", ".vim", ".nvim"]
+description = "编辑器配置"
+
+# 代码质量
+[file_types.other.quality]
+extensions = [".eslintrc", ".eslintrc.js", ".eslintrc.json", ".eslintrc.yml", "eslint.config.js", ".prettierrc", ".prettierrc.json", ".prettierrc.js", ".prettierrc.yml", ".prettierignore", ".clang-format", ".rubocop.yml", ".rubocop_todo.yml"]
+description = "代码质量配置"
+
+# 类型定义文件
+[file_types.other.typescript_types]
+extensions = [".d.ts", ".d.mts"]
+description = "TypeScript 类型定义"
+
