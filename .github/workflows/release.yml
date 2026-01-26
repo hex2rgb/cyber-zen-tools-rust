@@ -18,20 +18,20 @@ jobs:
             target: x86_64-apple-darwin
             os_name: darwin
             arch: amd64
-          - os: ubuntu-latest
-            target: x86_64-unknown-linux-musl
+          - os: ubuntu-20.04
+            target: x86_64-unknown-linux-gnu
             os_name: ubuntu
             arch: amd64
-          - os: ubuntu-latest
-            target: aarch64-unknown-linux-musl
+          - os: ubuntu-20.04
+            target: aarch64-unknown-linux-gnu
             os_name: ubuntu
             arch: arm64
-          - os: ubuntu-latest
-            target: x86_64-unknown-linux-musl
+          - os: ubuntu-20.04
+            target: x86_64-unknown-linux-gnu
             os_name: debian
             arch: amd64
-          - os: ubuntu-latest
-            target: aarch64-unknown-linux-musl
+          - os: ubuntu-20.04
+            target: aarch64-unknown-linux-gnu
             os_name: debian
             arch: arm64
     runs-on: ${{ matrix.os }}
@@ -48,20 +48,11 @@ jobs:
       with:
         targets: ${{ matrix.target }}
 
-    - name: Install musl toolchain
-      if: contains(matrix.target, 'linux-musl')
+    - name: Install cross-compilation toolchain
+      if: matrix.target == 'aarch64-unknown-linux-gnu'
       run: |
         sudo apt-get update
-        if [[ "${{ matrix.target }}" == "x86_64-unknown-linux-musl" ]]; then
-          sudo apt-get install -y musl-tools
-        elif [[ "${{ matrix.target }}" == "aarch64-unknown-linux-musl" ]]; then
-          # 安装 musl 交叉编译工具链
-          sudo apt-get install -y musl-tools gcc-aarch64-linux-gnu
-          # 安装 musl 交叉编译工具
-          wget https://musl.cc/aarch64-linux-musl-cross.tgz
-          sudo tar -xzf aarch64-linux-musl-cross.tgz -C /usr/local --strip-components=1
-          rm aarch64-linux-musl-cross.tgz
-        fi
+        sudo apt-get install -y gcc-aarch64-linux-gnu
 
     - name: Cache Rust dependencies
       uses: actions/cache@v4
@@ -78,12 +69,9 @@ jobs:
 
     - name: Build
       env:
-        CC_x86_64_unknown_linux_musl: musl-gcc
-        CARGO_TARGET_X86_64_UNKNOWN_LINUX_MUSL_LINKER: musl-gcc
-        CC_aarch64_unknown_linux_musl: /usr/local/bin/aarch64-linux-musl-gcc
-        CARGO_TARGET_AARCH64_UNKNOWN_LINUX_MUSL_LINKER: /usr/local/bin/aarch64-linux-musl-gcc
+        CC_aarch64_unknown_linux_gnu: aarch64-linux-gnu-gcc
+        CARGO_TARGET_AARCH64_UNKNOWN_LINUX_GNU_LINKER: aarch64-linux-gnu-gcc
       run: |
-        export PATH="/usr/local/bin:$PATH"
         cargo build --release --target ${{ matrix.target }}
         mkdir -p dist
         cp target/${{ matrix.target }}/release/cyber-zen-tools "dist/cyber-zen-${{ matrix.os_name }}-${{ matrix.arch }}"
