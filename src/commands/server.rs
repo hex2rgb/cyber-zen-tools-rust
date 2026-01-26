@@ -15,7 +15,7 @@ pub fn run_server(dir: Option<String>, port: u16) -> Result<(), Box<dyn std::err
     
     let abs_path = fs::canonicalize(&server_dir)?;
     
-    if port < 1 || port > 65535 {
+    if port < 1 {
         eprintln!("❌ 错误: 端口号必须在 1-65535 范围内");
         std::process::exit(1);
     }

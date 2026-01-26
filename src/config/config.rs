@@ -1,4 +1,4 @@
-use std::path::{Path, PathBuf};
+use std::path::PathBuf;
 
 pub fn init_config() -> Result<(), Box<dyn std::error::Error>> {
     // 配置初始化逻辑（如果需要）

@@ -111,6 +111,7 @@ impl FileTypeManager {
         }
     }
     
+    #[allow(dead_code)]
     pub fn get_commit_description(&self, commit_type: &str) -> String {
         self.commit_templates.descriptions
             .get(commit_type)

@@ -8,6 +8,7 @@ pub struct ChangeInfo {
     file: String,
     status: String,
     category: String,
+    #[allow(dead_code)]
     file_type: String,
 }
 
