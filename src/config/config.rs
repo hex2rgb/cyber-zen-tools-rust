@@ -32,9 +32,10 @@ pub fn get_model_dir() -> PathBuf {
 }
 
 /// 模型文件夹名称（固定值）
-/// 对应模型：Qwen2.5-Coder-7B-Instruct (GGUF 量化版本)
-/// 注意：文件夹名称应该与下载的模型文件夹名称一致
-pub const MODEL_FOLDER_NAME: &str = "qwen2.5-coder-7b-gguf";
+/// 对应模型：Qwen2.5-0.5B-Instruct (GGUF 量化版本 Q4_K_M)
+/// 注意：使用 Instruct 模型，更适合总结/归纳任务（commit message 生成）
+/// 文件夹名称应该与下载的模型文件夹名称一致
+pub const MODEL_FOLDER_NAME: &str = "qwen2.5-0.5b-instruct";
 
 /// 获取模型文件夹路径
 pub fn get_model_folder_path() -> PathBuf {

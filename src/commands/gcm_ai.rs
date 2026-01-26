@@ -238,31 +238,18 @@ fn build_commit_prompt(
     diff: &str,
     _file_type_manager: &FileTypeManager
 ) -> String {
+    // 简洁的 prompt（小模型友好，符合 next.md 规范）
     let mut prompt = String::from(
-        "你是一个专业的 Git 提交信息生成助手。根据以下代码变更，生成一个符合 Conventional Commits 规范的 commit message。\n\n"
+        "你是 Git 提交信息生成助手。\n\n根据下面的代码变更，总结一个简短的提交信息。\n\n"
     );
     
-    // 文件变更列表
-    prompt.push_str("变更文件：\n");
-    for change in changes {
-        let action = match change.status.as_str() {
-            "A" => "新增",
-            "M" => "修改",
-            "D" => "删除",
-            "R" => "重命名",
-            _ => "变更",
-        };
-        prompt.push_str(&format!("- {} {} ({})\n", action, change.file, change.category));
-    }
-    
-    // 代码 Diff（限制长度避免超出上下文）
+    // 代码 Diff（严格限制长度）
     if !diff.trim().is_empty() {
-        prompt.push_str("\n代码变更内容：\n");
+        prompt.push_str("代码变更：\n");
         prompt.push_str("```diff\n");
         
-        // 限制 diff 长度（减少到 500 行，避免内存溢出）
-        // 注意：对于 commit message 生成，500 行通常已经足够了解主要变更
-        const MAX_DIFF_LINES: usize = 500;
+        // 限制 diff 长度（严格限制为 20 行，确保性能）
+        const MAX_DIFF_LINES: usize = 20;
         let diff_lines: Vec<&str> = diff.lines().take(MAX_DIFF_LINES).collect();
         prompt.push_str(&diff_lines.join("\n"));
         
@@ -272,20 +259,20 @@ fn build_commit_prompt(
         }
         
         prompt.push_str("\n```\n");
-    } else {
-        prompt.push_str("\n注意：未获取到具体的代码变更内容，仅根据文件名生成 commit message。\n");
     }
     
-    // 要求
+    // 简洁的要求
     prompt.push_str("\n要求：\n");
-    prompt.push_str("1. 使用中文\n");
-    prompt.push_str("2. 格式：<type>: <description>\n");
-    prompt.push_str("3. type 可以是：feat, fix, refactor, style, docs, test, chore, perf, cleanup\n");
-    prompt.push_str("4. description 要简洁明了，准确描述代码变更的主要目的\n");
-    prompt.push_str("5. 只返回 commit message，不要其他说明\n");
-    prompt.push_str("6. 根据代码变更的具体内容，而不是文件名，来判断变更类型\n");
-    if !diff.trim().is_empty() {
-        prompt.push_str("7. 优先分析代码变更的实际功能变化，而不是文件路径\n");
+    prompt.push_str("- 使用中文\n");
+    prompt.push_str("- 格式：<type>: <description>\n");
+    prompt.push_str("- description 不超过 20 个字\n");
+    prompt.push_str("- 只输出 commit message\n");
+    
+    // 检查 prompt 长度，如果超过 2000 字符则截断
+    const MAX_PROMPT_LENGTH: usize = 2000;
+    if prompt.len() > MAX_PROMPT_LENGTH {
+        prompt.truncate(MAX_PROMPT_LENGTH);
+        prompt.push_str("... (已截断)");
     }
     
     prompt
@@ -319,8 +306,8 @@ fn call_local_model(model_path: &PathBuf, prompt: &str) -> Result<String, Box<dy
         println!("{}", "正在生成文本...".yellow());
         println!("{} {}", "输入 prompt 长度:".cyan(), prompt.len());
         
-        // 生成文本（最大 200 tokens）
-        let output = model.generate(prompt, 200)
+        // 生成文本（最大 32 tokens，commit message 永远不需要更多）
+        let output = model.generate(prompt, 32)
             .map_err(|e| format!("文本生成失败: {}", e))?;
         
         println!("{} {}", "生成文本长度:".cyan(), output.len());
@@ -353,8 +340,8 @@ fn call_local_model(model_path: &PathBuf, prompt: &str) -> Result<String, Box<dy
         println!("{}", "正在生成文本...".yellow());
         println!("{} {}", "输入 prompt 长度:".cyan(), prompt.len());
         
-        // 生成文本（最大 200 tokens）
-        let output = model.generate(prompt, 200)
+        // 生成文本（最大 32 tokens，commit message 永远不需要更多）
+        let output = model.generate(prompt, 32)
             .map_err(|e| format!("文本生成失败: {}", e))?;
         
         println!("{} {}", "生成文本长度:".cyan(), output.len());

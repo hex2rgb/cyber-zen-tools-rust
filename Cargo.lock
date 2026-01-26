@@ -396,6 +396,7 @@ dependencies = [
  "colored",
  "hf-hub",
  "image",
+ "num_cpus",
  "regex",
  "safetensors 0.4.5",
  "serde",

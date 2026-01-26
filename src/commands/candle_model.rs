@@ -13,6 +13,7 @@ use std::path::PathBuf;
 use std::fs;
 use tokenizers::Tokenizer;
 use serde_json::Value;
+use num_cpus;
 
 /// Candle 模型包装器（仅支持 Qwen3）
 pub struct CandleModel {
@@ -27,6 +28,16 @@ impl CandleModel {
     /// 从本地文件加载模型（仅支持 Qwen3）
     /// model_path 应该是模型目录中的 model.safetensors 文件路径（或分片文件）
     pub fn load_from_path(model_path: &PathBuf) -> Result<Self> {
+        // 确保使用多线程（必须！）
+        let cpu_count = num_cpus::get();
+        if std::env::var("OMP_NUM_THREADS").is_err() {
+            std::env::set_var("OMP_NUM_THREADS", &cpu_count.to_string());
+        }
+        if std::env::var("RAYON_NUM_THREADS").is_err() {
+            std::env::set_var("RAYON_NUM_THREADS", &cpu_count.to_string());
+        }
+        println!("  使用 {} 个 CPU 核心进行推理", cpu_count);
+        
         let device = Device::Cpu;
         
         // 获取模型目录
