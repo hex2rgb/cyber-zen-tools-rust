@@ -18,6 +18,22 @@ jobs:
             target: x86_64-apple-darwin
             os_name: darwin
             arch: amd64
+          - os: ubuntu-latest
+            target: x86_64-unknown-linux-gnu
+            os_name: ubuntu
+            arch: amd64
+          - os: ubuntu-latest
+            target: aarch64-unknown-linux-gnu
+            os_name: ubuntu
+            arch: arm64
+          - os: ubuntu-latest
+            target: x86_64-unknown-linux-gnu
+            os_name: debian
+            arch: amd64
+          - os: ubuntu-latest
+            target: aarch64-unknown-linux-gnu
+            os_name: debian
+            arch: arm64
     runs-on: ${{ matrix.os }}
     permissions:
       contents: write
@@ -101,6 +117,10 @@ jobs:
           ### 下载
           - [cyber-zen-darwin-amd64.tar.gz](https://github.com/${{ github.repository }}/releases/download/${{ steps.version.outputs.version }}/cyber-zen-darwin-amd64.tar.gz) - macOS Intel
           - [cyber-zen-darwin-arm64.tar.gz](https://github.com/${{ github.repository }}/releases/download/${{ steps.version.outputs.version }}/cyber-zen-darwin-arm64.tar.gz) - macOS Apple Silicon
+          - [cyber-zen-ubuntu-amd64.tar.gz](https://github.com/${{ github.repository }}/releases/download/${{ steps.version.outputs.version }}/cyber-zen-ubuntu-amd64.tar.gz) - Ubuntu x86_64
+          - [cyber-zen-ubuntu-arm64.tar.gz](https://github.com/${{ github.repository }}/releases/download/${{ steps.version.outputs.version }}/cyber-zen-ubuntu-arm64.tar.gz) - Ubuntu ARM64
+          - [cyber-zen-debian-amd64.tar.gz](https://github.com/${{ github.repository }}/releases/download/${{ steps.version.outputs.version }}/cyber-zen-debian-amd64.tar.gz) - Debian x86_64
+          - [cyber-zen-debian-arm64.tar.gz](https://github.com/${{ github.repository }}/releases/download/${{ steps.version.outputs.version }}/cyber-zen-debian-arm64.tar.gz) - Debian ARM64
           
           ### 安装
           ```bash

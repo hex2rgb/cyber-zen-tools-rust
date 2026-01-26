@@ -68,8 +68,20 @@ detect_arch() {
 detect_os() {
     case "$(uname -s)" in
         Darwin*) echo "apple-darwin" ;;
-        Linux*) echo "unknown-linux-gnu" ;;
-        *) echo "unknown-linux-gnu" ;;
+        Linux*)
+            # 检测 Linux 发行版
+            if [ -f /etc/os-release ]; then
+                local os_id=$(grep -E '^ID=' /etc/os-release | cut -d'=' -f2 | tr -d '"' | tr '[:upper:]' '[:lower:]')
+                case "$os_id" in
+                    debian) echo "debian-linux-gnu" ;;
+                    ubuntu) echo "ubuntu-linux-gnu" ;;
+                    *) echo "ubuntu-linux-gnu" ;;  # 默认使用 ubuntu
+                esac
+            else
+                echo "ubuntu-linux-gnu"  # 默认使用 ubuntu
+            fi
+            ;;
+        *) echo "ubuntu-linux-gnu" ;;
     esac
 }
 
@@ -86,8 +98,9 @@ map_arch_for_release() {
 map_os_for_release() {
     case "$1" in
         apple-darwin) echo "darwin" ;;
-        unknown-linux-gnu) echo "linux" ;;
-        *) echo "linux" ;;
+        debian-linux-gnu) echo "debian" ;;
+        ubuntu-linux-gnu) echo "ubuntu" ;;
+        *) echo "ubuntu" ;;  # 默认使用 ubuntu
     esac
 }
 
