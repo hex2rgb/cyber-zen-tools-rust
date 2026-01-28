@@ -129,6 +129,14 @@ impl FileTypeManager {
 
 fn load_file_type_config(config_dir: &Path) -> Result<FileTypeConfig, Box<dyn std::error::Error>> {
     let config_path = config_dir.join("file-types.toml");
+
+    if !config_path.exists() {
+        // 返回默认配置
+        return Ok(FileTypeConfig {
+            file_types: HashMap::new(),
+        });
+    }
+
     let content = fs::read_to_string(&config_path)?;
     let config: FileTypeConfig = toml::from_str(&content)?;
     Ok(config)
@@ -136,6 +144,15 @@ fn load_file_type_config(config_dir: &Path) -> Result<FileTypeConfig, Box<dyn st
 
 fn load_category_config(config_dir: &Path) -> Result<CategoryConfig, Box<dyn std::error::Error>> {
     let config_path = config_dir.join("categories.toml");
+
+    if !config_path.exists() {
+        // 返回默认配置
+        return Ok(CategoryConfig {
+            directory_patterns: HashMap::new(),
+            default: "项目文件".to_string(),
+        });
+    }
+
     let content = fs::read_to_string(&config_path)?;
     let wrapper: CategoryConfigWrapper = toml::from_str(&content)?;
     Ok(CategoryConfig {
@@ -146,6 +163,42 @@ fn load_category_config(config_dir: &Path) -> Result<CategoryConfig, Box<dyn std
 
 fn load_commit_template_config(config_dir: &Path) -> Result<CommitTemplateConfig, Box<dyn std::error::Error>> {
     let config_path = config_dir.join("commit-templates.toml");
+
+    if !config_path.exists() {
+        // 返回默认配置
+        let mut prefixes = HashMap::new();
+        prefixes.insert("feat".to_string(), "feat".to_string());
+        prefixes.insert("fix".to_string(), "fix".to_string());
+        prefixes.insert("docs".to_string(), "docs".to_string());
+        prefixes.insert("style".to_string(), "style".to_string());
+        prefixes.insert("refactor".to_string(), "refactor".to_string());
+        prefixes.insert("test".to_string(), "test".to_string());
+        prefixes.insert("chore".to_string(), "chore".to_string());
+        prefixes.insert("cleanup".to_string(), "cleanup".to_string());
+
+        let mut descriptions = HashMap::new();
+        descriptions.insert("feat".to_string(), "新功能".to_string());
+        descriptions.insert("fix".to_string(), "修复".to_string());
+        descriptions.insert("docs".to_string(), "文档".to_string());
+        descriptions.insert("style".to_string(), "样式".to_string());
+        descriptions.insert("refactor".to_string(), "重构".to_string());
+        descriptions.insert("test".to_string(), "测试".to_string());
+        descriptions.insert("chore".to_string(), "构建".to_string());
+        descriptions.insert("cleanup".to_string(), "清理".to_string());
+
+        let mut actions = HashMap::new();
+        actions.insert("added".to_string(), "新增".to_string());
+        actions.insert("modified".to_string(), "修改".to_string());
+        actions.insert("deleted".to_string(), "删除".to_string());
+        actions.insert("renamed".to_string(), "重命名".to_string());
+
+        return Ok(CommitTemplateConfig {
+            prefixes,
+            descriptions,
+            actions,
+        });
+    }
+
     let content = fs::read_to_string(&config_path)?;
     let wrapper: CommitTemplateConfigWrapper = toml::from_str(&content)?;
     Ok(wrapper.commit_templates)

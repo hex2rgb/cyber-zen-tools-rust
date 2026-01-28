@@ -306,19 +306,37 @@ verify_installation() {
 # 从指定目录安装配置文件
 install_configs_from_dir() {
     local source_dir="$1"
-    local user_config_dir="$HOME/.cyber-zen/configs"
+
+    # 获取实际用户的 HOME 目录（即使通过 sudo 运行）
+    local actual_home
+    if [ -n "$SUDO_USER" ]; then
+        actual_home=$(eval echo ~$SUDO_USER)
+    else
+        actual_home="$HOME"
+    fi
+
+    local user_config_dir="$actual_home/.cyber-zen/configs"
     mkdir -p "$user_config_dir"
-    
+
+    # 如果是通过 sudo 运行，需要修改目录权限
+    if [ -n "$SUDO_USER" ]; then
+        chown -R "$SUDO_USER:$(id -gn $SUDO_USER)" "$actual_home/.cyber-zen"
+    fi
+
     local config_files=("file-types.toml" "categories.toml" "commit-templates.toml")
     local success_count=0
-    
-    print_info "从 $source_dir 复制配置文件..."
+
+    print_info "从 $source_dir 复制配置文件到 $user_config_dir..."
     for config_file in "${config_files[@]}"; do
         local source_file="$source_dir/$config_file"
         local target_file="$user_config_dir/$config_file"
-        
+
         if [ -f "$source_file" ]; then
             if cp "$source_file" "$target_file"; then
+                # 如果是通过 sudo 运行，修改文件所有者
+                if [ -n "$SUDO_USER" ]; then
+                    chown "$SUDO_USER:$(id -gn $SUDO_USER)" "$target_file"
+                fi
                 print_success "✓ $config_file 复制成功"
                 ((success_count++))
             else
@@ -328,7 +346,7 @@ install_configs_from_dir() {
             print_warning "⚠ $config_file 不存在于 $source_dir"
         fi
     done
-    
+
     if [ $success_count -eq ${#config_files[@]} ]; then
         print_success "✓ 所有配置文件安装完成: $user_config_dir"
     fi
@@ -337,14 +355,27 @@ install_configs_from_dir() {
 # 安装配置文件
 install_configs() {
     print_info "安装配置文件..."
-    
+
+    # 获取实际用户的 HOME 目录（即使通过 sudo 运行）
+    local actual_home
+    if [ -n "$SUDO_USER" ]; then
+        actual_home=$(eval echo ~$SUDO_USER)
+    else
+        actual_home="$HOME"
+    fi
+
     # 创建用户配置目录
-    local user_config_dir="$HOME/.cyber-zen/configs"
+    local user_config_dir="$actual_home/.cyber-zen/configs"
     mkdir -p "$user_config_dir"
-    
+
+    # 如果是通过 sudo 运行，需要修改目录权限
+    if [ -n "$SUDO_USER" ]; then
+        chown -R "$SUDO_USER:$(id -gn $SUDO_USER)" "$actual_home/.cyber-zen"
+    fi
+
     # 尝试找到项目配置目录
     local project_config_dir=""
-    
+
     # 方法1: 从脚本所在目录查找（如果脚本在项目目录中）
     local script_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
     if [ -d "$script_dir/../configs" ]; then
@@ -359,7 +390,7 @@ install_configs() {
             project_config_dir="$exe_dir/configs"
         fi
     fi
-    
+
     # 如果找到本地配置目录，从本地复制
     if [ -n "$project_config_dir" ] && [ -d "$project_config_dir" ]; then
         install_configs_from_dir "$project_config_dir"
@@ -369,20 +400,24 @@ install_configs() {
         local base_url="https://raw.githubusercontent.com/hex2rgb/cyber-zen-tools-rust/main/configs"
         local config_files=("file-types.toml" "categories.toml" "commit-templates.toml")
         local success_count=0
-        
+
         for config_file in "${config_files[@]}"; do
             local download_url="$base_url/$config_file"
             local target_file="$user_config_dir/$config_file"
-            
+
             print_info "下载: $config_file"
             if curl -fsSL "$download_url" -o "$target_file"; then
+                # 如果是通过 sudo 运行，修改文件所有者
+                if [ -n "$SUDO_USER" ]; then
+                    chown "$SUDO_USER:$(id -gn $SUDO_USER)" "$target_file"
+                fi
                 print_success "✓ $config_file 下载成功"
                 ((success_count++))
             else
                 print_warning "⚠ $config_file 下载失败"
             fi
         done
-        
+
         if [ $success_count -eq ${#config_files[@]} ]; then
             print_success "✓ 所有配置文件安装完成: $user_config_dir"
         else
