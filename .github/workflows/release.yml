@@ -59,28 +59,16 @@ jobs:
         path: dist/cyber-zen-${{ matrix.os_name }}-${{ matrix.arch }}
 
   build-linux:
-    name: Build ${{ matrix.os_name }}-${{ matrix.arch }}
+    name: Build Linux-${{ matrix.arch }}
     strategy:
       max-parallel: 2
       matrix:
         include:
-          - os: ubuntu-20.04
-            target: x86_64-unknown-linux-musl
-            os_name: ubuntu
+          - target: x86_64-unknown-linux-musl
             arch: amd64
-          - os: ubuntu-20.04
-            target: aarch64-unknown-linux-musl
-            os_name: ubuntu
+          - target: aarch64-unknown-linux-musl
             arch: arm64
-          - os: ubuntu-20.04
-            target: x86_64-unknown-linux-musl
-            os_name: debian
-            arch: amd64
-          - os: ubuntu-20.04
-            target: aarch64-unknown-linux-musl
-            os_name: debian
-            arch: arm64
-    runs-on: ${{ matrix.os }}
+    runs-on: ubuntu-20.04
     permissions:
       contents: write
       packages: write
@@ -91,20 +79,10 @@ jobs:
 
     - name: Set up Rust
       uses: dtolnay/rust-toolchain@stable
-      with:
-        targets: ${{ matrix.target }}
 
-    - name: Install cross-compilation toolchain
+    - name: Install cross
       run: |
-        sudo apt-get update
-        sudo apt-get install -y musl-tools
-        if [[ "${{ matrix.target }}" == "aarch64-unknown-linux-musl" ]]; then
-          sudo apt-get install -y gcc-aarch64-linux-gnu
-          # 安装 musl 交叉编译工具链
-          wget https://musl.cc/aarch64-linux-musl-cross.tgz
-          tar -xzf aarch64-linux-musl-cross.tgz
-          echo "$PWD/aarch64-linux-musl-cross/bin" >> $GITHUB_PATH
-        fi
+        cargo install cross --git https://github.com/cross-rs/cross
 
     - name: Cache Rust dependencies
       uses: actions/cache@v4
@@ -115,25 +93,22 @@ jobs:
           ~/.cargo/registry/cache/
           ~/.cargo/git/db/
           target/
-        key: ${{ runner.os }}-rust-${{ hashFiles('**/Cargo.lock') }}
+        key: ${{ runner.os }}-cross-${{ hashFiles('**/Cargo.lock') }}
         restore-keys: |
-          ${{ runner.os }}-rust-
+          ${{ runner.os }}-cross-
 
     - name: Build
-      env:
-        CC_aarch64_unknown_linux_musl: aarch64-linux-musl-gcc
-        CARGO_TARGET_AARCH64_UNKNOWN_LINUX_MUSL_LINKER: aarch64-linux-musl-gcc
       run: |
-        cargo build --release --target ${{ matrix.target }}
+        cross build --release --target ${{ matrix.target }}
         mkdir -p dist
-        cp target/${{ matrix.target }}/release/cyber-zen-tools "dist/cyber-zen-${{ matrix.os_name }}-${{ matrix.arch }}"
-        chmod +x "dist/cyber-zen-${{ matrix.os_name }}-${{ matrix.arch }}"
+        cp target/${{ matrix.target }}/release/cyber-zen-tools "dist/cyber-zen-linux-${{ matrix.arch }}"
+        chmod +x "dist/cyber-zen-linux-${{ matrix.arch }}"
 
     - name: Upload artifact
       uses: actions/upload-artifact@v4
       with:
-        name: cyber-zen-${{ matrix.os_name }}-${{ matrix.arch }}
-        path: dist/cyber-zen-${{ matrix.os_name }}-${{ matrix.arch }}
+        name: cyber-zen-linux-${{ matrix.arch }}
+        path: dist/cyber-zen-linux-${{ matrix.arch }}
 
   release:
     name: Create Release
@@ -174,15 +149,13 @@ jobs:
         name: Release ${{ github.ref_name }}
         body: |
           ## Cyber Zen Tools ${{ steps.version.outputs.version }}
-          
+
           ### 下载
           - [cyber-zen-darwin-amd64.tar.gz](https://github.com/${{ github.repository }}/releases/download/${{ steps.version.outputs.version }}/cyber-zen-darwin-amd64.tar.gz) - macOS Intel
           - [cyber-zen-darwin-arm64.tar.gz](https://github.com/${{ github.repository }}/releases/download/${{ steps.version.outputs.version }}/cyber-zen-darwin-arm64.tar.gz) - macOS Apple Silicon
-          - [cyber-zen-ubuntu-amd64.tar.gz](https://github.com/${{ github.repository }}/releases/download/${{ steps.version.outputs.version }}/cyber-zen-ubuntu-amd64.tar.gz) - Ubuntu x86_64
-          - [cyber-zen-ubuntu-arm64.tar.gz](https://github.com/${{ github.repository }}/releases/download/${{ steps.version.outputs.version }}/cyber-zen-ubuntu-arm64.tar.gz) - Ubuntu ARM64
-          - [cyber-zen-debian-amd64.tar.gz](https://github.com/${{ github.repository }}/releases/download/${{ steps.version.outputs.version }}/cyber-zen-debian-amd64.tar.gz) - Debian x86_64
-          - [cyber-zen-debian-arm64.tar.gz](https://github.com/${{ github.repository }}/releases/download/${{ steps.version.outputs.version }}/cyber-zen-debian-arm64.tar.gz) - Debian ARM64
-          
+          - [cyber-zen-linux-amd64.tar.gz](https://github.com/${{ github.repository }}/releases/download/${{ steps.version.outputs.version }}/cyber-zen-linux-amd64.tar.gz) - Linux x86_64 (Ubuntu/Debian)
+          - [cyber-zen-linux-arm64.tar.gz](https://github.com/${{ github.repository }}/releases/download/${{ steps.version.outputs.version }}/cyber-zen-linux-arm64.tar.gz) - Linux ARM64 (Ubuntu/Debian)
+
           ### 安装
           ```bash
           # 下载并安装
