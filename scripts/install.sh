@@ -98,9 +98,9 @@ map_arch_for_release() {
 map_os_for_release() {
     case "$1" in
         apple-darwin) echo "darwin" ;;
-        debian-linux-gnu) echo "debian" ;;
-        ubuntu-linux-gnu) echo "ubuntu" ;;
-        *) echo "ubuntu" ;;  # 默认使用 ubuntu
+        debian-linux-gnu) echo "linux" ;;
+        ubuntu-linux-gnu) echo "linux" ;;
+        *) echo "linux" ;;  # 默认使用 linux
     esac
 }
 

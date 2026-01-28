@@ -58,3 +58,4 @@ docs/
 # 本地测试文件
 testdata/
 
+.claude
