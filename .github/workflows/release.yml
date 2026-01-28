@@ -19,19 +19,19 @@ jobs:
             os_name: darwin
             arch: amd64
           - os: ubuntu-20.04
-            target: x86_64-unknown-linux-gnu
+            target: x86_64-unknown-linux-musl
             os_name: ubuntu
             arch: amd64
           - os: ubuntu-20.04
-            target: aarch64-unknown-linux-gnu
+            target: aarch64-unknown-linux-musl
             os_name: ubuntu
             arch: arm64
           - os: ubuntu-20.04
-            target: x86_64-unknown-linux-gnu
+            target: x86_64-unknown-linux-musl
             os_name: debian
             arch: amd64
           - os: ubuntu-20.04
-            target: aarch64-unknown-linux-gnu
+            target: aarch64-unknown-linux-musl
             os_name: debian
             arch: arm64
     runs-on: ${{ matrix.os }}
@@ -49,10 +49,17 @@ jobs:
         targets: ${{ matrix.target }}
 
     - name: Install cross-compilation toolchain
-      if: matrix.target == 'aarch64-unknown-linux-gnu'
+      if: runner.os == 'Linux'
       run: |
         sudo apt-get update
-        sudo apt-get install -y gcc-aarch64-linux-gnu
+        sudo apt-get install -y musl-tools
+        if [[ "${{ matrix.target }}" == "aarch64-unknown-linux-musl" ]]; then
+          sudo apt-get install -y gcc-aarch64-linux-gnu
+          # 安装 musl 交叉编译工具链
+          wget https://musl.cc/aarch64-linux-musl-cross.tgz
+          tar -xzf aarch64-linux-musl-cross.tgz
+          echo "$PWD/aarch64-linux-musl-cross/bin" >> $GITHUB_PATH
+        fi
 
     - name: Cache Rust dependencies
       uses: actions/cache@v4
@@ -69,8 +76,8 @@ jobs:
 
     - name: Build
       env:
-        CC_aarch64_unknown_linux_gnu: aarch64-linux-gnu-gcc
-        CARGO_TARGET_AARCH64_UNKNOWN_LINUX_GNU_LINKER: aarch64-linux-gnu-gcc
+        CC_aarch64_unknown_linux_musl: aarch64-linux-musl-gcc
+        CARGO_TARGET_AARCH64_UNKNOWN_LINUX_MUSL_LINKER: aarch64-linux-musl-gcc
       run: |
         cargo build --release --target ${{ matrix.target }}
         mkdir -p dist
